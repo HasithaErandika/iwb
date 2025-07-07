@@ -47,17 +47,17 @@ const data = {
     navMain: [
         {
             title: "Home",
-            url: "#",
+            url: "/workspace",
             icon: IconDashboard
         },
         {
             title: "Remote Jobs",
-            url: "#",
+            url: "/workspace/jobs",
             icon: IconBriefcase
         },
         {
             title: "Places",
-            url: "#",
+            url: "/workspace/places",
             icon: IconMapPinShare
         },
         {

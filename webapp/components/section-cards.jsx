@@ -38,7 +38,7 @@ export function SectionCards() {
                             </p>
                             <Button
                                 variant="outline"
-                                className="w-full bg-white border border-gray-200 transition-colors duration-500  hover:border-black text-gray-800 font-medium py-2 px-4 rounded-xl hover:bg-white"
+                                className="w-full bg-white border border-gray-200 transition-colors duration-500  hover:border-black text-gray-800 font-medium py-2 px-4 rounded-xl"
                             >
                                 Search Places
                             </Button>
