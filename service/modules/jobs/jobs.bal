@@ -1,127 +1,66 @@
 import ballerina/http;
+import ballerina/lang.regexp;
 
 final http:Client workingNomadsClient = check new ("https://www.workingnomads.com");
 
 public function fetchJobs() returns Job[]|error {
     json response = check workingNomadsClient->get(path = "/api/exposed_jobs/");
-    Job[] jobs = check response.cloneWithType();
-    return jobs;
+    return check response.cloneWithType();
 }
 
 public function fetchFilteredJobs(JobFilters filters) returns Job[]|error {
     Job[] allJobs = check fetchJobs();
-    Job[] filteredJobs = [];
-
-    foreach Job job in allJobs {
-        if matchesFilters(job, filters) {
-            filteredJobs.push(job);
-        }
-    }
-
-    return filteredJobs;
+    return allJobs.filter(job => matchesFilters(job, filters));
 }
 
 function matchesFilters(Job job, JobFilters filters) returns boolean {
-    // Check position type
-    if filters.positionType is PositionType {
-        PositionType positionType = <PositionType>filters.positionType;
-        if !containsPositionType(job, positionType) {
-            return false;
-        }
-    }
-
-    if filters.category is Category {
-        Category category = <Category>filters.category;
-        if !matchesCategory(job, category) {
-            return false;
-        }
-    }
-
-    if filters.minSalary is int || filters.maxSalary is int {
-        if !matchesSalaryRange(job, filters.minSalary, filters.maxSalary) {
-            return false;
-        }
-    }
-
-    return true;
+    return (filters.positionType is () || containsPositionType(job, <PositionType>filters.positionType)) &&
+            (filters.category is () || job.category_name == <Category>filters.category) &&
+            matchesSalaryRange(job, filters.minSalary, filters.maxSalary);
 }
 
 function containsPositionType(Job job, PositionType positionType) returns boolean {
-    string titleLower = job.title.toLowerAscii();
-    string descriptionLower = job.description.toLowerAscii();
-    string positionTypeLower = positionType.toLowerAscii();
-
-    return titleLower.includes(positionTypeLower) || descriptionLower.includes(positionTypeLower);
-}
-
-function matchesCategory(Job job, Category category) returns boolean {
-    return job.category_name == category;
+    string combinedText = (job.title + " " + job.description).toLowerAscii();
+    return combinedText.includes(positionType.toLowerAscii());
 }
 
 function matchesSalaryRange(Job job, int? minSalary, int? maxSalary) returns boolean {
-    int? jobSalary = extractSalaryFromJob(job);
-
-    if jobSalary is () {
+    int?|error jobSalaryResult = extractSalaryFromJob(job);
+    if jobSalaryResult is error {
         return true;
     }
 
-    if minSalary is int && jobSalary < minSalary {
-        return false;
-    }
-
-    if maxSalary is int && jobSalary > maxSalary {
-        return false;
-    }
-
-    return true;
+    int? jobSalary = jobSalaryResult;
+    return jobSalary is () ||
+            (minSalary is () || jobSalary >= minSalary) &&
+            (maxSalary is () || jobSalary <= maxSalary);
 }
 
-function extractSalaryFromJob(Job job) returns int? {
-    string combinedText = job.title + " " + job.description;
-    string textLower = combinedText.toLowerAscii();
+function extractSalaryFromJob(Job job) returns int?|error {
+    string text = (job.title + " " + job.description).toLowerAscii();
 
-    int? startIndex = textLower.indexOf("$");
-    if startIndex is int {
-        string afterDollar = textLower.substring(startIndex + 1);
-        string numberStr = "";
-        foreach int i in 0 ..< afterDollar.length() {
-            string char = afterDollar.substring(i, i + 1);
-            if char >= "0" && char <= "9" || char == "," || char == "k" {
-                numberStr += char;
-            } else {
-                break;
-            }
-        }
+    string:RegExp salaryPattern = re `\$(\d{1,3}(?:,\d{3})*k?|\d+k?)`;
+    regexp:Span? matchResult = salaryPattern.find(text);
 
-        if numberStr.length() > 0 {
-            if numberStr.endsWith("k") {
-                string numPart = numberStr.substring(0, numberStr.length() - 1);
-                numPart = numPart.trim();
-                numPart = removeCommas(numPart);
-                int|error baseNum = int:fromString(numPart);
-                if baseNum is int {
-                    return baseNum * 1000;
-                }
-            } else {
-                numberStr = removeCommas(numberStr);
-                int|error salary = int:fromString(numberStr);
-                if salary is int {
-                    return salary;
-                }
-            }
-        }
+    if matchResult is () {
+        return ();
     }
 
-    return ();
-}
+    string matchedText = text.substring(matchResult.startIndex, matchResult.endIndex);
+    string salaryStr = matchedText.substring(1); // Remove the $ sign
 
-function removeCommas(string input) returns string {
-    string result = "";
-    foreach int i in 0 ..< input.length() {
-        string char = input.substring(i, i + 1);
+    string cleanSalaryStr = "";
+    foreach string char in salaryStr {
         if char != "," {
-            result += char;
+            cleanSalaryStr += char;
         }
     }
-    return result;
+    salaryStr = cleanSalaryStr;
+
+    if salaryStr.endsWith("k") {
+        int|error baseNum = int:fromString(salaryStr.substring(0, salaryStr.length() - 1));
+        return baseNum is int ? baseNum * 1000 : baseNum;
+    }
+
+    return int:fromString(salaryStr);
 }

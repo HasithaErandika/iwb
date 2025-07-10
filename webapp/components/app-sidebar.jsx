@@ -62,68 +62,21 @@ const data = {
         },
         {
             title: "Meetups",
-            url: "#",
+            url: "/workspace/meetups",
             icon: IconSteam
         },
         {
             title: "City Guide",
-            url: "#",
+            url: "/workspace/city-guide",
             icon: IconMessageCircleSearch
         },
         {
             title: "Friends Finder",
-            url: "#",
+            url: "/workspace/friends-finder",
             icon: IconUsersPlus
         }
     ],
-    navClouds: [
-        {
-            title: "Capture",
-            icon: IconCamera,
-            isActive: true,
-            url: "#",
-            items: [
-                {
-                    title: "Active Proposals",
-                    url: "#"
-                },
-                {
-                    title: "Archived",
-                    url: "#"
-                }
-            ]
-        },
-        {
-            title: "Proposal",
-            icon: IconFileDescription,
-            url: "#",
-            items: [
-                {
-                    title: "Active Proposals",
-                    url: "#"
-                },
-                {
-                    title: "Archived",
-                    url: "#"
-                }
-            ]
-        },
-        {
-            title: "Prompts",
-            icon: IconFileAi,
-            url: "#",
-            items: [
-                {
-                    title: "Active Proposals",
-                    url: "#"
-                },
-                {
-                    title: "Archived",
-                    url: "#"
-                }
-            ]
-        }
-    ],
+    
     navSecondary: [
         {
             title: "Settings",
