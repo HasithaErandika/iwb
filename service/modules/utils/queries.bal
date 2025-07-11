@@ -51,6 +51,34 @@ public function getAllMeetups() returns MeetupRecord[]|sql:Error {
         select meetup;
 }
 
+public function updateMeetup(string eventId, MeetupUpdate updateData) returns sql:ExecutionResult|sql:Error {
+    sql:ParameterizedQuery updateQuery = `
+        UPDATE meetups SET 
+            event_name = ${updateData.eventName},
+            event_description = ${updateData.eventDescription},
+            event_start_date = ${updateData.eventStartDate},
+            event_start_time = ${updateData.eventStartTime},
+            event_end_date = ${updateData.eventEndDate},
+            event_end_time = ${updateData.eventEndTime},
+            venue_name = ${updateData.venueName},
+            venue_google_maps_url = ${updateData.venueGoogleMapsUrl},
+            is_paid_event = ${updateData.isPaidEvent},
+            event_cost = ${updateData.eventCost},
+            has_limited_capacity = ${updateData.hasLimitedCapacity},
+            event_capacity = ${updateData.eventCapacity},
+            require_approval = ${updateData.requireApproval},
+            image_url = ${updateData.imageUrl}
+        WHERE event_id = ${eventId}
+    `;
+
+    return dbClient->execute(updateQuery);
+}
+
+public function deleteMeetup(string eventId) returns sql:ExecutionResult|sql:Error {
+    sql:ParameterizedQuery deleteQuery = `DELETE FROM meetups WHERE event_id = ${eventId}`;
+    return dbClient->execute(deleteQuery);
+}
+
 public type MeetupRecord record {|
     string event_id;
     string event_name;
@@ -87,4 +115,21 @@ public type MeetupInsert record {|
     boolean requireApproval;
     string? imageUrl;
     string createdAt;
+|};
+
+public type MeetupUpdate record {|
+    string eventName;
+    string eventDescription;
+    string eventStartDate;
+    string eventStartTime;
+    string eventEndDate;
+    string eventEndTime;
+    string venueName;
+    string venueGoogleMapsUrl;
+    boolean isPaidEvent;
+    decimal? eventCost;
+    boolean hasLimitedCapacity;
+    int? eventCapacity;
+    boolean requireApproval;
+    string? imageUrl;
 |};

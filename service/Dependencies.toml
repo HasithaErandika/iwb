@@ -344,6 +344,9 @@ version = "2.6.0"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
 ]
+modules = [
+	{org = "ballerina", packageName = "url", moduleName = "url"}
+]
 
 [[package]]
 org = "ballerina"
@@ -354,6 +357,9 @@ dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "lang.int"},
 	{org = "ballerina", name = "time"}
+]
+modules = [
+	{org = "ballerina", packageName = "uuid", moduleName = "uuid"}
 ]
 
 [[package]]
@@ -447,6 +453,8 @@ dependencies = [
 	{org = "ballerina", name = "sql"},
 	{org = "ballerina", name = "test"},
 	{org = "ballerina", name = "time"},
+	{org = "ballerina", name = "url"},
+	{org = "ballerina", name = "uuid"},
 	{org = "ballerinai", name = "observe"},
 	{org = "ballerinax", name = "aws.s3"},
 	{org = "ballerinax", name = "postgresql"},

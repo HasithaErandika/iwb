@@ -4,6 +4,7 @@ import ballerina/http;
 import ballerina/mime;
 import ballerina/sql;
 import ballerina/time;
+import ballerina/uuid;
 
 public function createMeetup(http:Request req) returns EventCreationResult|error {
     mime:Entity[]|http:ClientError bodyParts = req.getBodyParts();
@@ -11,97 +12,17 @@ public function createMeetup(http:Request req) returns EventCreationResult|error
         return {success: false, message: "Error parsing multipart data"};
     }
 
-    string eventName = "";
-    string eventDescription = "";
-    string eventStartDate = "";
-    string eventStartTime = "";
-    string eventEndDate = "";
-    string eventEndTime = "";
-    string venueName = "";
-    string venueGoogleMapsUrl = "";
-    boolean isPaidEvent = false;
-    decimal? eventCost = ();
-    boolean hasLimitedCapacity = false;
-    int? eventCapacity = ();
-    boolean requireApproval = false;
+    // Initialize form data map
+    // Initialize form data map
+    map<string> formData = {};
     string? imageUrl = ();
 
+    // Process form parts
     foreach mime:Entity part in bodyParts {
         mime:ContentDisposition contentDisposition = part.getContentDisposition();
         string partName = contentDisposition.name;
 
-        if partName == "eventName" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                eventName = textContent;
-            }
-        } else if partName == "eventDescription" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                eventDescription = textContent;
-            }
-        } else if partName == "eventStartDate" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                eventStartDate = textContent;
-            }
-        } else if partName == "eventStartTime" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                eventStartTime = textContent;
-            }
-        } else if partName == "eventEndDate" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                eventEndDate = textContent;
-            }
-        } else if partName == "eventEndTime" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                eventEndTime = textContent;
-            }
-        } else if partName == "venueName" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                venueName = textContent;
-            }
-        } else if partName == "venueGoogleMapsUrl" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                venueGoogleMapsUrl = textContent;
-            }
-        } else if partName == "isPaidEvent" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                isPaidEvent = textContent == "true";
-            }
-        } else if partName == "eventCost" {
-            string|error textContent = part.getText();
-            if textContent is string && textContent != "" {
-                decimal|error costValue = decimal:fromString(textContent);
-                if costValue is decimal {
-                    eventCost = costValue;
-                }
-            }
-        } else if partName == "hasLimitedCapacity" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                hasLimitedCapacity = textContent == "true";
-            }
-        } else if partName == "eventCapacity" {
-            string|error textContent = part.getText();
-            if textContent is string && textContent != "" {
-                int|error capacityValue = int:fromString(textContent);
-                if capacityValue is int {
-                    eventCapacity = capacityValue;
-                }
-            }
-        } else if partName == "requireApproval" {
-            string|error textContent = part.getText();
-            if textContent is string {
-                requireApproval = textContent == "true";
-            }
-        } else if partName == "image" {
+        if partName == "image" {
             utils:ImageUploadResult|error uploadResult = utils:uploadImageToS3(req);
             if uploadResult is utils:ImageUploadResult && uploadResult.success {
                 utils:ImageData? imageData = uploadResult?.data;
@@ -109,42 +30,64 @@ public function createMeetup(http:Request req) returns EventCreationResult|error
                     imageUrl = imageData.url;
                 }
             }
+        } else {
+            string|error textContent = part.getText();
+            if textContent is string {
+                formData[partName] = textContent;
+            }
         }
     }
 
-    if eventName == "" || eventDescription == "" || eventStartDate == "" || eventStartTime == "" ||
-        eventEndDate == "" || eventEndTime == "" || venueName == "" || venueGoogleMapsUrl == "" {
-        return {success: false, message: "Missing required fields: eventName, eventDescription, eventStartDate, eventStartTime, eventEndDate, eventEndTime, venueName, venueGoogleMapsUrl"};
-    }
+    // Required fields validation
+    string[] requiredFields = [
+        "eventName",
+        "eventDescription",
+        "eventStartDate",
+        "eventStartTime",
+        "eventEndDate",
+        "eventEndTime",
+        "venueName",
+        "venueGoogleMapsUrl"
+    ];
 
+    foreach var fld in requiredFields {
+        if !formData.hasKey(fld) || formData[fld] == "" {
+            return {success: false, message: "Missing required fields: " + string:'join(", ", ...requiredFields)};
+        }
+    }
+    // Parse boolean and numeric fields
+    boolean isPaidEvent = formData.get("isPaidEvent") == "true";
+    boolean hasLimitedCapacity = formData.get("hasLimitedCapacity") == "true";
+    boolean requireApproval = formData.get("requireApproval") == "true";
+
+    decimal? eventCost = isPaidEvent ? parseDecimal(formData.get("eventCost")) : ();
+    int? eventCapacity = hasLimitedCapacity ? parseInt(formData.get("eventCapacity")) : ();
+
+    // Business logic validation
     if isPaidEvent && eventCost is () {
         return {success: false, message: "Event cost is required for paid events"};
     }
-
     if hasLimitedCapacity && eventCapacity is () {
         return {success: false, message: "Event capacity is required for limited capacity events"};
     }
 
-    string eventId = generateEventId();
-    string createdAt = time:utcNow().toString();
-
     utils:MeetupInsert meetupInsert = {
-        eventId: eventId,
-        eventName: eventName,
-        eventDescription: eventDescription,
-        eventStartDate: eventStartDate,
-        eventStartTime: eventStartTime,
-        eventEndDate: eventEndDate,
-        eventEndTime: eventEndTime,
-        venueName: venueName,
-        venueGoogleMapsUrl: venueGoogleMapsUrl,
+        eventId: uuid:createType1AsString(),
+        eventName: formData.get("eventName"),
+        eventDescription: formData.get("eventDescription"),
+        eventStartDate: formData.get("eventStartDate"),
+        eventStartTime: formData.get("eventStartTime"),
+        eventEndDate: formData.get("eventEndDate"),
+        eventEndTime: formData.get("eventEndTime"),
+        venueName: formData.get("venueName"),
+        venueGoogleMapsUrl: formData.get("venueGoogleMapsUrl"),
         isPaidEvent: isPaidEvent,
         eventCost: eventCost,
         hasLimitedCapacity: hasLimitedCapacity,
         eventCapacity: eventCapacity,
         requireApproval: requireApproval,
         imageUrl: imageUrl,
-        createdAt: createdAt
+        createdAt: time:utcNow().toString()
     };
 
     sql:ExecutionResult|sql:Error dbResult = utils:insertMeetup(meetupInsert);
@@ -152,30 +95,126 @@ public function createMeetup(http:Request req) returns EventCreationResult|error
         return {success: false, message: "Failed to save meetup to database: " + dbResult.message()};
     }
 
-    return {
-        success: true,
-        message: "Event created successfully and saved to database",
-        data: {
-            eventId: eventId,
-            eventName: eventName,
-            eventDescription: eventDescription,
-            eventStartDate: eventStartDate,
-            eventStartTime: eventStartTime,
-            eventEndDate: eventEndDate,
-            eventEndTime: eventEndTime,
-            venueName: venueName,
-            venueGoogleMapsUrl: venueGoogleMapsUrl,
-            isPaidEvent: isPaidEvent,
-            eventCost: eventCost,
-            hasLimitedCapacity: hasLimitedCapacity,
-            eventCapacity: eventCapacity,
-            requireApproval: requireApproval,
-            imageUrl: imageUrl,
-            createdAt: createdAt
-        }
-    };
+    return {success: true, message: "Event created successfully and saved to database"};
 }
 
-function generateEventId() returns string {
-    return "event_" + time:utcNow().toString();
+public function getAllMeetups() returns MeetupListResponse|error {
+    utils:MeetupRecord[]|sql:Error dbResult = utils:getAllMeetups();
+    if dbResult is sql:Error {
+        return {success: false, message: "Failed to fetch meetups: " + dbResult.message()};
+    }
+
+    EventData[] eventDataList = [];
+    foreach utils:MeetupRecord meetup in dbResult {
+        EventData eventData = {
+            eventId: meetup.event_id,
+            eventName: meetup.event_name,
+            eventDescription: meetup.event_description,
+            eventStartDate: meetup.event_start_date,
+            eventStartTime: meetup.event_start_time,
+            eventEndDate: meetup.event_end_date,
+            eventEndTime: meetup.event_end_time,
+            venueName: meetup.venue_name,
+            venueGoogleMapsUrl: meetup.venue_google_maps_url,
+            isPaidEvent: meetup.is_paid_event,
+            eventCost: meetup.event_cost,
+            hasLimitedCapacity: meetup.has_limited_capacity,
+            eventCapacity: meetup.event_capacity,
+            requireApproval: meetup.require_approval,
+            imageUrl: meetup.image_url,
+            createdAt: meetup.created_at
+        };
+        eventDataList.push(eventData);
+    }
+
+    return {success: true, message: "Meetups fetched successfully", data: eventDataList};
+}
+
+public function getMeetupById(string eventId) returns MeetupResponse|error {
+    utils:MeetupRecord|sql:Error dbResult = utils:getMeetupById(eventId);
+    if dbResult is sql:Error {
+        return {success: false, message: "Meetup not found"};
+    }
+
+    EventData eventData = {
+        eventId: dbResult.event_id,
+        eventName: dbResult.event_name,
+        eventDescription: dbResult.event_description,
+        eventStartDate: dbResult.event_start_date,
+        eventStartTime: dbResult.event_start_time,
+        eventEndDate: dbResult.event_end_date,
+        eventEndTime: dbResult.event_end_time,
+        venueName: dbResult.venue_name,
+        venueGoogleMapsUrl: dbResult.venue_google_maps_url,
+        isPaidEvent: dbResult.is_paid_event,
+        eventCost: dbResult.event_cost,
+        hasLimitedCapacity: dbResult.has_limited_capacity,
+        eventCapacity: dbResult.event_capacity,
+        requireApproval: dbResult.require_approval,
+        imageUrl: dbResult.image_url,
+        createdAt: dbResult.created_at
+    };
+
+    return {success: true, message: "Meetup fetched successfully", data: eventData};
+}
+
+public function updateMeetup(string eventId, EventUpdateRequest updateRequest) returns EventCreationResult|error {
+    utils:MeetupUpdate meetupUpdate = {
+        eventName: updateRequest.eventName,
+        eventDescription: updateRequest.eventDescription,
+        eventStartDate: updateRequest.eventStartDate,
+        eventStartTime: updateRequest.eventStartTime,
+        eventEndDate: updateRequest.eventEndDate,
+        eventEndTime: updateRequest.eventEndTime,
+        venueName: updateRequest.venueName,
+        venueGoogleMapsUrl: updateRequest.venueGoogleMapsUrl,
+        isPaidEvent: updateRequest.isPaidEvent,
+        eventCost: updateRequest.eventCost,
+        hasLimitedCapacity: updateRequest.hasLimitedCapacity,
+        eventCapacity: updateRequest.eventCapacity,
+        requireApproval: updateRequest.requireApproval,
+        imageUrl: ()
+    };
+
+    sql:ExecutionResult|sql:Error dbResult = utils:updateMeetup(eventId, meetupUpdate);
+    if dbResult is sql:Error {
+        return {success: false, message: "Failed to update meetup: " + dbResult.message()};
+    }
+
+    sql:ExecutionResult result = dbResult;
+    if result.affectedRowCount == 0 {
+        return {success: false, message: "Meetup not found"};
+    }
+
+    return {success: true, message: "Meetup updated successfully"};
+}
+
+public function deleteMeetup(string eventId) returns EventCreationResult|error {
+    sql:ExecutionResult|sql:Error dbResult = utils:deleteMeetup(eventId);
+    if dbResult is sql:Error {
+        return {success: false, message: "Failed to delete meetup: " + dbResult.message()};
+    }
+
+    sql:ExecutionResult result = dbResult;
+    if result.affectedRowCount == 0 {
+        return {success: false, message: "Meetup not found"};
+    }
+
+    return {success: true, message: "Meetup deleted successfully"};
+}
+
+function parseDecimal(string? value) returns decimal? {
+    if value is string && value != "" {
+        decimal|error result = decimal:fromString(value);
+        return result is decimal ? result : ();
+    }
+    return ();
+}
+
+function parseInt(string? value) returns int? {
+    if value is string && value != "" {
+        int|error result = int:fromString(value);
+        return result is int ? result : ();
+    }
+    return ();
 }

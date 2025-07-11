@@ -1,10 +1,8 @@
 import 'service.jobs;
 import 'service.meetups;
-import 'service.utils;
 
 import ballerina/http;
 import ballerina/log;
-import ballerina/time;
 
 configurable int port = 8080;
 
@@ -42,6 +40,48 @@ service / on new http:Listener(port) {
         return jobsResult is error ? <http:InternalServerError>{body: {message: "Failed to fetch jobs", details: jobsResult.message()}} : jobsResult;
     }
 
+    resource function get api/meetups() returns json|http:InternalServerError {
+        meetups:MeetupListResponse|error result = meetups:getAllMeetups();
+        if result is error {
+            return <http:InternalServerError>{body: {success: false, message: "Error fetching meetups: " + result.message()}};
+        }
+        return result.toJson();
+    }
+
+    resource function get api/meetups/[string eventId]() returns json|http:NotFound|http:InternalServerError {
+        meetups:MeetupResponse|error result = meetups:getMeetupById(eventId);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching meetup: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>{
+                body: {success: false, message: result.message}
+            };
+        }
+
+        return result.toJson();
+    }
+
+    resource function delete api/meetups/[string eventId]() returns json|http:NotFound|http:InternalServerError {
+        meetups:EventCreationResult|error result = meetups:deleteMeetup(eventId);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error deleting meetup: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>{
+                body: result.toJson()
+            };
+        }
+
+        return result.toJson();
+    }
+
     resource function post event/create(http:Request req) returns json|error {
         meetups:EventCreationResult|error result = meetups:createMeetup(req);
         if result is error {
@@ -50,33 +90,6 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function post upload/image(http:Request req) returns json|error {
-        utils:ImageUploadResult|error result = utils:uploadImageToS3(req);
-        if result is error {
-            return {success: false, message: "Error uploading image: " + result.message()};
-        }
-        return result.toJson();
-    }
-
-    resource function get images() returns json|error {
-        utils:ImageListResult|error result = utils:listImagesFromS3();
-        if result is error {
-            return {success: false, message: "Error listing images: " + result.message()};
-        }
-        return result.toJson();
-    }
-
-    resource function get image/[string filename]() returns http:Response|error {
-        return utils:getImageFromS3(filename);
-    }
-
-    resource function get health() returns json {
-        return {
-            status: "healthy",
-            "service": "event-management-service",
-            timestamp: time:utcNow().toString()
-        };
-    }
 }
 
 public function main() returns error? {
