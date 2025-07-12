@@ -1,3 +1,4 @@
+import 'service.city_guide;
 import 'service.jobs;
 import 'service.meetups;
 
@@ -87,6 +88,25 @@ service / on new http:Listener(port) {
         if result is error {
             return {success: false, message: "Error creating event: " + result.message()};
         }
+        return result.toJson();
+    }
+
+    resource function post api/chat(@http:Payload city_guide:UserChatRequest chatRequest)
+    returns json|http:BadRequest|http:InternalServerError {
+
+        if chatRequest.message.trim() == "" {
+            return <http:BadRequest>{
+                body: {success: false, message: "Message cannot be empty"}
+            };
+        }
+
+        city_guide:CityGuideResponse|error result = city_guide:askAnything(chatRequest.message);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error processing chat request: " + result.message()}
+            };
+        }
+
         return result.toJson();
     }
 
