@@ -1,6 +1,7 @@
 import 'service.city_guide;
 import 'service.jobs;
 import 'service.meetups;
+import 'service.users;
 
 import ballerina/http;
 import ballerina/log;
@@ -11,7 +12,7 @@ configurable int port = 8080;
     cors: {
         allowOrigins: ["http://localhost:3000"],
         allowCredentials: false,
-        allowHeaders: ["CORELATION_ID", "Content-Type"],
+        allowHeaders: ["CORELATION_ID", "Content-Type", "Authorization"],
         allowMethods: ["GET", "POST", "PUT", "DELETE"]
     }
 }
@@ -104,6 +105,72 @@ service / on new http:Listener(port) {
         if result is error {
             return <http:InternalServerError>{
                 body: {success: false, message: "Error processing chat request: " + result.message()}
+            };
+        }
+
+        return result.toJson();
+    }
+
+    resource function post api/users(@http:Payload users:UserCreateRequest userRequest)
+    returns json|http:BadRequest|http:InternalServerError {
+
+        if userRequest.userId.trim() == "" || userRequest.email.trim() == "" ||
+            userRequest.firstName.trim() == "" || userRequest.lastName.trim() == "" {
+            return <http:BadRequest>{
+                body: {success: false, message: "User ID, email, first name, and last name are required"}
+            };
+        }
+
+        users:UserResponse|error result = users:createOrUpdateUser(userRequest);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error creating/updating user: " + result.message()}
+            };
+        }
+
+        return result.toJson();
+    }
+
+    resource function get api/users() returns json|http:InternalServerError {
+        users:UserListResponse|error result = users:getAllUsers();
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching users: " + result.message()}
+            };
+        }
+        return result.toJson();
+    }
+
+    resource function get api/users/[string userId]() returns json|http:NotFound|http:InternalServerError {
+        users:UserResponse|error result = users:getUserById(userId);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching user: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>{
+                body: {success: false, message: result.message}
+            };
+        }
+
+        return result.toJson();
+    }
+
+    resource function put api/users/[string userId](@http:Payload users:UserUpdateRequest updateRequest)
+    returns json|http:BadRequest|http:InternalServerError {
+
+        if userId.trim() == "" {
+            return <http:BadRequest>{
+                body: {success: false, message: "User ID is required"}
+            };
+        }
+
+        users:UserResponse|error result = users:updateUserProfile(userId, updateRequest);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error updating user profile: " + result.message()}
             };
         }
 

@@ -462,9 +462,11 @@ dependencies = [
 ]
 modules = [
 	{org = "user", packageName = "service", moduleName = "service"},
+	{org = "user", packageName = "service", moduleName = "service.city_guide"},
 	{org = "user", packageName = "service", moduleName = "service.jobs"},
 	{org = "user", packageName = "service", moduleName = "service.meetups"},
 	{org = "user", packageName = "service", moduleName = "service.places"},
+	{org = "user", packageName = "service", moduleName = "service.users"},
 	{org = "user", packageName = "service", moduleName = "service.utils"}
 ]
 
