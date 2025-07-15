@@ -76,7 +76,7 @@ const data = {
             icon: IconUsersPlus
         }
     ],
-    
+
     navSecondary: [
         {
             title: "Settings",

@@ -411,7 +411,7 @@ export default function JobListingsPage() {
           {filteredJobs.map((job) => (
             <Card
               key={job.url}
-              className="bg-white border-gray-200 transition-all duration-500 hover:border-orange-500"
+              className="bg-white transition-all duration-500 hover:border-orange-500"
             >
               <CardContent className="px-6 py-4">
                 <div className="flex items-start justify-between mb-3">
