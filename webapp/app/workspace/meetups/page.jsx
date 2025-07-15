@@ -1,109 +1,133 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Users, MapPin, Calendar } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Users, MapPin, Calendar, Clock, DollarSign, Loader2, XCircle, CheckCircle } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import Link from "next/link"
 
-// Mock data for events
-const mockEvents = [
-  {
-    id: 1,
-    title: "Digital Nomad Coffee Meetup",
-    city: "Lisbon",
-    date: "Dec 15, 2024",
-    time: "10:00 AM",
-    attendees: 12,
-    image: "/placeholder.svg?height=200&width=300",
-    category: "Networking",
-    isGoing: false,
-  },
-  {
-    id: 2,
-    title: "Remote Work & Productivity Workshop",
-    city: "Barcelona",
-    date: "Dec 18, 2024",
-    time: "2:00 PM",
-    attendees: 25,
-    image: "/placeholder.svg?height=200&width=300",
-    category: "Workshop",
-    isGoing: true,
-  },
-  {
-    id: 3,
-    title: "Startup Founders Dinner",
-    city: "Berlin",
-    date: "Dec 20, 2024",
-    time: "7:00 PM",
-    attendees: 8,
-    image: "/placeholder.svg?height=200&width=300",
-    category: "Social",
-    isGoing: false,
-  },
-  {
-    id: 4,
-    title: "Coworking Space Tour & Networking",
-    city: "Amsterdam",
-    date: "Dec 22, 2024",
-    time: "11:00 AM",
-    attendees: 18,
-    image: "/placeholder.svg?height=200&width=300",
-    category: "Networking",
-    isGoing: false,
-  },
-  {
-    id: 5,
-    title: "Tech Talk: AI for Remote Teams",
-    city: "Prague",
-    date: "Dec 25, 2024",
-    time: "4:00 PM",
-    attendees: 35,
-    image: "/placeholder.svg?height=200&width=300",
-    category: "Tech",
-    isGoing: true,
-  },
-  {
-    id: 6,
-    title: "Freelancer Tax Workshop",
-    city: "Budapest",
-    date: "Dec 28, 2024",
-    time: "1:00 PM",
-    attendees: 22,
-    image: "/placeholder.svg?height=200&width=300",
-    category: "Workshop",
-    isGoing: false,
-  },
-]
+const API_BASE_URL = 'http://localhost:8080';
 
 export default function EventsListing() {
-  const [events, setEvents] = useState(mockEvents)
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedCity, setSelectedCity] = useState("all")
   const [selectedCategory, setSelectedCategory] = useState("all")
 
-  const cities = Array.from(new Set(mockEvents.map((event) => event.city)))
-  const categories = Array.from(new Set(mockEvents.map((event) => event.category)))
+  // Fetch meetups from API
+  const fetchMeetups = async () => {
+    try {
+      setLoading(true)
+      setError('')
 
+      const response = await fetch(`${API_BASE_URL}/api/meetups`)
+      const data = await response.json()
+
+      if (response.ok) {
+        // Handle the API response structure: {success: true, message: "", data: [...]}
+        if (data.success && data.data) {
+          setEvents(data.data)
+        } else {
+          setError(data.message || 'No meetups data received')
+        }
+      } else {
+        setError(data.message || 'Failed to fetch meetups')
+      }
+    } catch (err) {
+      setError('Network error: Unable to fetch meetups')
+      console.error('Error fetching meetups:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load meetups on component mount
+  useEffect(() => {
+    fetchMeetups()
+  }, [])
+
+  // Extract unique cities and create categories from event data
+  const cities = Array.from(new Set(events.map((event) => event.venueName).filter(Boolean)))
+  const categories = ["Workshop", "Networking", "Social", "Tech", "Business"] // Common meetup categories
+
+  // Format date and time
+  const formatDateTime = (date, time) => {
+    try {
+      const datetime = new Date(`${date}T${time}`)
+      return {
+        date: datetime.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }),
+        time: datetime.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        })
+      }
+    } catch {
+      return { date: date, time: time }
+    }
+  }
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount)
+  }
+
+  // Filter events based on selections
   const filteredEvents = events.filter((event) => {
-    const cityMatch = selectedCity === "all" || event.city === selectedCity
-    const categoryMatch = selectedCategory === "all" || event.category === selectedCategory
+    const cityMatch = selectedCity === "all" || event.venueName === selectedCity
+    // For category filtering, we would need to add category field to the API or derive it from event name/description
+    const categoryMatch = selectedCategory === "all" // For now, show all since we don't have category in API
     return cityMatch && categoryMatch
   })
 
-  const toggleGoing = (eventId) => {
-    setEvents(
-      events.map((event) => {
-        if (event.id === eventId) {
-          return {
-            ...event,
-            isGoing: !event.isGoing,
-            attendees: event.isGoing ? event.attendees - 1 : event.attendees + 1,
-          }
-        }
-        return event
-      }),
+  // Calculate estimated attendees (since we don't have actual attendee count)
+  const getEstimatedAttendees = (event) => {
+    if (event.hasLimitedCapacity && event.eventCapacity) {
+      // Simulate 60-80% capacity for limited events
+      return Math.floor(event.eventCapacity * (0.6 + Math.random() * 0.2))
+    }
+    // Random number for unlimited events
+    return Math.floor(Math.random() * 50) + 10
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading meetups...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Alert className="border-red-200 bg-red-50 mb-6">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {error}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={fetchMeetups} variant="outline">
+          Try Again
+        </Button>
+      </div>
     )
   }
 
@@ -115,7 +139,7 @@ export default function EventsListing() {
           <h1 className="text-3xl font-bold text-black mb-2">Explore Meetups</h1>
           <p className="text-gray-600">Discover and join events in your city</p>
         </div>
-        <Link href="/create">
+        <Link href="/workspace/meetups/create">
           <Button className="bg-black hover:bg-black/90 text-white">Create Meetup</Button>
         </Link>
       </div>
@@ -127,7 +151,7 @@ export default function EventsListing() {
             <SelectValue placeholder="All Cities" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Cities</SelectItem>
+            <SelectItem value="all">All Venues</SelectItem>
             {cities.map((city) => (
               <SelectItem key={city} value={city}>
                 {city}
@@ -149,57 +173,107 @@ export default function EventsListing() {
             ))}
           </SelectContent>
         </Select>
+
+        <Button
+          onClick={fetchMeetups}
+          variant="outline"
+          className="border-black/20 text-black hover:bg-black/5"
+        >
+          Refresh
+        </Button>
       </div>
 
       {/* Events Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map((event) => (
-          <Card key={event.id} className="bg-gray-50 border-black/10 rounded-xl overflow-hidden">
-            <div className="aspect-video relative">
-              <Image src={event.image || "/placeholder.svg"} alt={event.title} fill className="object-cover" />
-            </div>
-            <CardContent className="p-5">
-              <h3 className="font-bold text-black text-lg mb-3 line-clamp-2 leading-tight">{event.title}</h3>
+        {filteredEvents.map((event) => {
+          const { date, time } = formatDateTime(event.eventStartDate, event.eventStartTime)
+          const estimatedAttendees = getEstimatedAttendees(event)
 
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center text-gray-600 text-sm">
-                  <MapPin className="w-4 h-4 mr-2 text-black/60" />
-                  {event.city}
-                </div>
-                <div className="flex items-center text-gray-600 text-sm">
-                  <Calendar className="w-4 h-4 mr-2 text-black/60" />
-                  {event.date} • {event.time}
-                </div>
-                <div className="flex items-center text-gray-600 text-sm">
-                  <Users className="w-4 h-4 mr-2 text-black/60" />
-                  {event.attendees} going
-                </div>
+          return (
+            <Card key={event.eventId} className="bg-gray-50 border-black/10 rounded-xl overflow-hidden">
+              <div className="aspect-video relative">
+                {event.imageUrl ? (
+                  <Image
+                    src={event.imageUrl || "/placeholder.svg"}
+                    alt={event.eventName}
+                    fill
+                    className="object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400">No Image</span>
+                  </div>
+                )}
               </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => toggleGoing(event.id)}
-                  variant={event.isGoing ? "default" : "outline"}
-                  className={
-                    event.isGoing
-                      ? "bg-black hover:bg-black/90 text-white flex-1"
-                      : "border-black text-black hover:bg-black hover:text-white flex-1"
-                  }
-                >
-                  {event.isGoing ? "Going" : "Join"}
-                </Button>
-                <Button variant="outline" className="border-black/20 text-black hover:bg-black/5 bg-transparent">
-                  View
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              <CardContent className="p-5">
+                <h3 className="font-bold text-black text-lg mb-3 line-clamp-2 leading-tight">{event.eventName}</h3>
+                {/* Event badges */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {event.isPaidEvent && (
+                    <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                      {formatCurrency(event.eventCost)}
+                    </Badge>
+                  )}
+                  {event.hasLimitedCapacity && (
+                    <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+                      Limited ({event.eventCapacity} max)
+                    </Badge>
+                  )}
+                  {event.requireApproval && (
+                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                      Approval Required
+                    </Badge>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center text-gray-600 text-sm">
+                    <MapPin className="w-4 h-4 mr-2 text-black/60" />
+                    {event.venueName}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <Calendar className="w-4 h-4 mr-2 text-black/60" />
+                      {date}
+                    </div>
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <Clock className="w-4 h-4 mr-2 text-black/60" />
+                      {time}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
-      {filteredEvents.length === 0 && (
+      {filteredEvents.length === 0 && !loading && (
         <div className="text-center py-12">
-          <p className="text-gray-600">No events found matching your filters.</p>
+          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-600 mb-2">No meetups found</h3>
+          <p className="text-gray-500 mb-4">
+            {selectedCity !== "all" || selectedCategory !== "all"
+              ? "Try adjusting your filters or check back later for new events."
+              : "Check back later for upcoming events!"}
+          </p>
+          {(selectedCity !== "all" || selectedCategory !== "all") && (
+            <Button
+              onClick={() => {
+                setSelectedCity("all")
+                setSelectedCategory("all")
+              }}
+              variant="outline"
+              className="mr-2"
+            >
+              Clear Filters
+            </Button>
+          )}
+          <Button onClick={fetchMeetups} variant="outline">
+            Refresh
+          </Button>
         </div>
       )}
     </div>

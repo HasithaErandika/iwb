@@ -1,11 +1,13 @@
-import { SectionCards } from "@/components/section-cards"
+"use client";
+import { SectionCards } from "@/components/section-cards";
+import { withProtectedRoute } from "@/components/with-protected-component";
 
-import data from "./data.json"
+const Page = () => {
+  return (
+    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <SectionCards />
+    </div>
+  );
+};
 
-export default function Page() {
-    return (
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <SectionCards />
-        </div>
-    )
-}
+export default withProtectedRoute(Page);

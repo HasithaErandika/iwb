@@ -3,6 +3,7 @@ import ballerina/io;
 import ballerina/mime;
 import ballerina/regex as re;
 import ballerina/time;
+import ballerina/url;
 import ballerinax/aws.s3;
 
 configurable string accessKeyId = ?;
@@ -52,6 +53,15 @@ public type ImageInfo record {
     string url;
 };
 
+function generateCleanFileName(string originalFileName) returns string {
+    time:Utc currentTime = time:utcNow();
+    string timestamp = currentTime.toString();
+    string cleanTimestamp = re:replaceAll(timestamp, "[^0-9]", "");
+    string[] nameParts = re:split(originalFileName, "\\.");
+    string extension = nameParts.length() > 1 ? nameParts[nameParts.length() - 1] : "jpg";
+    return string `${cleanTimestamp}.${extension}`;
+}
+
 public function uploadImageToS3(http:Request req) returns ImageUploadResult|error {
     mime:Entity[]|http:ClientError bodyParts = req.getBodyParts();
     if bodyParts is error {
@@ -80,8 +90,8 @@ public function uploadImageToS3(http:Request req) returns ImageUploadResult|erro
         return {success: false, message: "Invalid image type. Supported: png, jpg, jpeg, gif, webp"};
     }
 
-    string uniqueFileName = time:utcNow().toString() + "_" + fileName;
-    string s3ObjectPath = "uploads/" + uniqueFileName;
+    string cleanFileName = generateCleanFileName(fileName);
+    string s3ObjectPath = "uploads/" + cleanFileName;
 
     error? uploadResult = s3Client->createObject(bucketName, s3ObjectPath, imageContent);
     if uploadResult is error {
@@ -92,7 +102,7 @@ public function uploadImageToS3(http:Request req) returns ImageUploadResult|erro
         success: true,
         message: "Image uploaded successfully",
         data: {
-            filename: uniqueFileName,
+            filename: cleanFileName,
             s3Path: s3ObjectPath,
             uploadedAt: time:utcNow().toString(),
             url: string `https://${bucketName}.s3.${region}.amazonaws.com/${s3ObjectPath}`
@@ -116,11 +126,13 @@ public function listImagesFromS3() returns ImageListResult|error {
         string objectSize = objectSizeOptional ?: "0";
         string lastModified = lastModifiedOptional ?: "";
 
+        string decodedUrl = decodeS3Url(string `https://${bucketName}.s3.${region}.amazonaws.com/${objectName}`);
+
         ImageInfo imageInfo = {
             name: objectName,
             size: objectSize,
             lastModified: lastModified,
-            url: string `https://${bucketName}.s3.${region}.amazonaws.com/${objectName}`
+            url: decodedUrl
         };
         imageInfos.push(imageInfo);
     }
@@ -158,4 +170,9 @@ public function getImageFromS3(string filename) returns http:Response|error {
     response.setHeader("Content-Type", imageTypes[extension] ?: "image/jpeg");
     response.setBinaryPayload(imageContent);
     return response;
+}
+
+function decodeS3Url(string s3Url) returns string {
+    string|error decodedUrl = url:decode(s3Url, "UTF-8");
+    return decodedUrl is string ? decodedUrl : s3Url;
 }
