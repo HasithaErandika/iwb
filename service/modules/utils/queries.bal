@@ -231,3 +231,51 @@ public type MeetupUpdate record {|
     boolean requireApproval;
     string? imageUrl;
 |};
+
+// chat types
+public type ChatMessageRecord record {|
+    string message_id;
+    string meetup_id;
+    string user_id;
+    string user_name;
+    string message;
+    string created_at;
+|};
+
+public type ChatMessageInsert record {|
+    string messageId;
+    string meetupId;
+    string userId;
+    string userName;
+    string message;
+    string createdAt;
+|};
+
+// chat
+public function insertChatMessage(ChatMessageInsert messageData) returns sql:ExecutionResult|sql:Error {
+    sql:ParameterizedQuery insertQuery = `
+        INSERT INTO chat_messages (
+            message_id, meetup_id, user_id, user_name, message, created_at
+        ) VALUES (
+            ${messageData.messageId}, ${messageData.meetupId}, ${messageData.userId}, 
+            ${messageData.userName}, ${messageData.message}, ${messageData.createdAt}
+        )
+    `;
+
+    return dbClient->execute(insertQuery);
+}
+
+public function getChatMessagesByMeetupId(string meetupId) returns ChatMessageRecord[]|sql:Error {
+    sql:ParameterizedQuery selectQuery = `
+        SELECT message_id, meetup_id, user_id, user_name, message, created_at
+        FROM chat_messages 
+        WHERE meetup_id = ${meetupId}
+        ORDER BY created_at ASC
+    `;
+
+    stream<ChatMessageRecord, sql:Error?> messageStream = dbClient->query(selectQuery);
+    return from ChatMessageRecord message in messageStream
+        select message;
+}
+
+// TODO : need to cleanup this

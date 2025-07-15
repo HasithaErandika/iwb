@@ -363,6 +363,29 @@ modules = [
 ]
 
 [[package]]
+org = "ballerina"
+name = "websocket"
+version = "2.14.0"
+dependencies = [
+	{org = "ballerina", name = "auth"},
+	{org = "ballerina", name = "constraint"},
+	{org = "ballerina", name = "http"},
+	{org = "ballerina", name = "io"},
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "jwt"},
+	{org = "ballerina", name = "lang.array"},
+	{org = "ballerina", name = "lang.runtime"},
+	{org = "ballerina", name = "lang.string"},
+	{org = "ballerina", name = "lang.value"},
+	{org = "ballerina", name = "log"},
+	{org = "ballerina", name = "oauth2"},
+	{org = "ballerina", name = "time"}
+]
+modules = [
+	{org = "ballerina", packageName = "websocket", moduleName = "websocket"}
+]
+
+[[package]]
 org = "ballerinai"
 name = "observe"
 version = "0.0.0"
@@ -455,6 +478,7 @@ dependencies = [
 	{org = "ballerina", name = "time"},
 	{org = "ballerina", name = "url"},
 	{org = "ballerina", name = "uuid"},
+	{org = "ballerina", name = "websocket"},
 	{org = "ballerinai", name = "observe"},
 	{org = "ballerinax", name = "aws.s3"},
 	{org = "ballerinax", name = "postgresql"},
@@ -462,6 +486,7 @@ dependencies = [
 ]
 modules = [
 	{org = "user", packageName = "service", moduleName = "service"},
+	{org = "user", packageName = "service", moduleName = "service.chat"},
 	{org = "user", packageName = "service", moduleName = "service.city_guide"},
 	{org = "user", packageName = "service", moduleName = "service.jobs"},
 	{org = "user", packageName = "service", moduleName = "service.meetups"},

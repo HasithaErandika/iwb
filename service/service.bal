@@ -1,3 +1,4 @@
+import 'service.chat;
 import 'service.city_guide;
 import 'service.jobs;
 import 'service.meetups;
@@ -177,8 +178,27 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
+    // chat api ( chat mean ws not ai chat)
+    resource function get api/chat/history/[string meetupId]() returns json|http:NotFound|http:InternalServerError {
+        chat:ChatHistoryResponse|error result = chat:getChatHistory(meetupId);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching chat history: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>{
+                body: {success: false, message: result.message}
+            };
+        }
+
+        return result.toJson();
+    }
+
 }
 
 public function main() returns error? {
     log:printInfo("Event Management Service started on port " + port.toString());
+    log:printInfo("WebSocket Chat Service started on port 9090");
 }
