@@ -17,7 +17,6 @@ public type EventCreationRequest record {
 public type EventCreationResult record {
     boolean success;
     string message;
-    EventData? data?;
 };
 
 public type EventData record {
@@ -37,4 +36,32 @@ public type EventData record {
     boolean requireApproval;
     string? imageUrl?;
     string createdAt;
+};
+
+public type MeetupResponse record {
+    boolean success;
+    string message;
+    EventData? data?;
+};
+
+public type MeetupListResponse record {
+    boolean success;
+    string message;
+    EventData[]? data?;
+};
+
+public type EventUpdateRequest record {
+    string eventName;
+    string eventDescription;
+    string eventStartDate;
+    string eventStartTime;
+    string eventEndDate;
+    string eventEndTime;
+    string venueName;
+    string venueGoogleMapsUrl;
+    boolean isPaidEvent;
+    decimal? eventCost;
+    boolean hasLimitedCapacity;
+    int? eventCapacity;
+    boolean requireApproval;
 };
