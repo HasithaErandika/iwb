@@ -2,6 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
+import { Button } from "./ui/button";
 
 export const SignOutButton = () => {
   const { data: session } = useSession();
@@ -22,11 +23,13 @@ export const SignOutButton = () => {
   };
 
   return (
-    <button
-      className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center text-lg h-10 px-4"
+    <Button
+      variant="ghost"
+      type="submit"
+      className="border border-slate-950 !hover:bg-blue-600 !text-slate-950 hover:cursor-pointer font-medium px-6 py-5 text-md rounded-md transition-colors duration-200"
       onClick={handleLogout}
     >
       Sign Out
-    </button>
+    </Button>
   );
 };
