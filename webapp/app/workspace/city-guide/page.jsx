@@ -1,422 +1,236 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Search,
-  Paperclip,
-  ArrowRightCircle,
-  ChevronRight,
-  ArrowRight,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { ChevronRight, Sparkles, MapPin, Clock, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import Link from "next/link";
 import Image from "next/image";
-
-const destinations = [
-  {
-    id: "colombo",
-    name: "Colombo",
-    description: "Commercial capital, colonial heritage",
-    image: "/images/cmb.avif",
-  },
-  {
-    id: "kurunegala",
-    name: "Kurunegala",
-    description: "Ancient kingdom, elephant rock",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: "kandy",
-    name: "Kandy",
-    description: "Cultural capital, sacred temple",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: "galle",
-    name: "Galle",
-    description: "Dutch fort, coastal charm",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-];
+import { useChat } from "@/lib/useChat";
+import { AdvancedSearchInput, AdvancedChatSheet } from "@/lib/advancedChatComponents";
+import { destinations } from "@/lib/cityGuideData";
 
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [chatResponse, setChatResponse] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [followUpQuery, setFollowUpQuery] = useState("");
+  const {
+    searchQuery,
+    setSearchQuery,
+    isSheetOpen,
+    setIsSheetOpen,
+    chatResponse,
+    isLoading,
+    followUpQuery,
+    setFollowUpQuery,
+    handleSearch,
+    handleFollowUpSearch,
+  } = useChat();
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-
-    setIsSheetOpen(true);
-    setIsLoading(true);
-    setChatResponse("");
-
-    try {
-      const response = await fetch("http://localhost:8080/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: searchQuery.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success === false) {
-        throw new Error(data.message || "Failed to get response");
-      }
-
-      // Format the response to be more informative like Perplexity AI
-      const formattedResponse = formatPerplexityResponse(data, searchQuery);
-      setChatResponse(formattedResponse);
-    } catch (error) {
-      console.error("Error fetching chat response:", error);
-      setChatResponse(`Sorry, I encountered an error while processing your request: "${searchQuery}". Please try again later.
-
-Error details: ${error.message}
-
-In the meantime, here are some general travel tips:
-• Check visa requirements for your destination
-• Research local customs and etiquette
-• Consider travel insurance
-• Pack according to the climate and activities planned`);
-    } finally {
-      setIsLoading(false);
+  const features = [
+    {
+      icon: Sparkles,
+      title: "AI-Powered",
+      description: "Advanced AI assistant for personalized recommendations"
+    },
+    {
+      icon: MapPin,
+      title: "Local Insights",
+      description: "Discover hidden gems and local favorites"
+    },
+    {
+      icon: Clock,
+      title: "Real-time Info",
+      description: "Get up-to-date information about destinations"
+    },
+    {
+      icon: Star,
+      title: "Curated Content",
+      description: "Hand-picked recommendations from experts"
     }
-  };
-
-  const handleFollowUpSearch = async () => {
-    if (!followUpQuery.trim()) return;
-
-    setIsLoading(true);
-    const currentFollowUp = followUpQuery.trim();
-    setFollowUpQuery("");
-
-    try {
-      const response = await fetch("http://localhost:8080/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: currentFollowUp,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success === false) {
-        throw new Error(data.message || "Failed to get response");
-      }
-
-      // Format the response
-      const formattedResponse = formatPerplexityResponse(data, currentFollowUp);
-      setChatResponse(formattedResponse);
-
-      // Update current query display
-      setSearchQuery(currentFollowUp);
-    } catch (error) {
-      console.error("Error fetching follow-up response:", error);
-      setChatResponse(`Sorry, I encountered an error while processing your follow-up question: "${currentFollowUp}". Please try again.
-
-Error details: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const formatPerplexityResponse = (data, query) => {
-    // Extract and format the response data similar to Perplexity AI style
-    let formattedText = "";
-
-    if (data.answer) {
-      formattedText = data.answer;
-    } else if (data.content) {
-      formattedText = data.content;
-    } else if (data.response) {
-      formattedText = data.response;
-    } else {
-      formattedText = JSON.stringify(data, null, 2);
-    }
-
-    // Return the formatted text as is, since it's already well-structured
-    return formattedText;
-  };
-
-  const renderFormattedText = (text) => {
-    // Split text into lines and process each line
-    const lines = text.split("\n");
-
-    return lines.map((line, index) => {
-      // Handle different line types
-      if (line.trim() === "") {
-        return <br key={index} />;
-      }
-
-      // Process bold text (**text**)
-      const processedLine = line.replace(
-        /\*\*(.*?)\*\*/g,
-        "<strong>$1</strong>"
-      );
-
-      // Handle bullet points and list items
-      if (line.trim().startsWith("- **")) {
-        return (
-          <div key={index} className="mb-4">
-            <div
-              className="text-gray-800 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: processedLine }}
-            />
-          </div>
-        );
-      } else if (line.trim().startsWith("- ")) {
-        return (
-          <div key={index} className="mb-2 ml-4">
-            <div
-              className="text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: processedLine }}
-            />
-          </div>
-        );
-      } else if (line.trim().startsWith("•")) {
-        return (
-          <div key={index} className="mb-2 ml-4">
-            <div
-              className="text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: processedLine }}
-            />
-          </div>
-        );
-      } else {
-        return (
-          <div key={index} className="mb-2">
-            <div
-              className="text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: processedLine }}
-            />
-          </div>
-        );
-      }
-    });
-  };
+  ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        {/* Logo */}
-        <div className="flex justify-center mb-12">
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
-              <div className="w-3 h-3 bg-white rounded-full"></div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* Enhanced Header */}
+        <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex justify-center mb-8"
+          >
+            <div className="flex items-center space-x-3 bg-white rounded-full px-6 py-3 shadow-lg">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">
+                Sri Lanka City Guide
+              </span>
             </div>
-            <span className="text-2xl font-normal text-gray-900">
-              City Guide
-            </span>
-          </div>
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="text-xl text-gray-600 max-w-3xl mx-auto"
+          >
+            Discover the perfect destinations for digital nomads in Sri Lanka. 
+            Get personalized recommendations, local insights, and everything you need to plan your adventure.
+          </motion.p>
         </div>
 
-        <div className="flex gap-8">
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Search Input */}
-            <div className="mb-12">
-              <div className="relative max-w-2xl">
-                <div className="relative border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors">
-                  <Input
-                    placeholder="Ask anything..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-16 py-5 text-base border-0 rounded-xl focus:ring-0 focus:border-0 bg-transparent"
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                  />
+        {/* Advanced Search Input */}
+        <AdvancedSearchInput
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onSearch={handleSearch}
+          placeholder="Ask about Sri Lankan destinations, culture, or travel tips..."
+        />
 
-                  {/* Left Icons */}
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                    <Search className="w-4 h-4 text-gray-400" />
-                  </div>
-
-                  {/* Right Icons */}
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                    <Button
-                      size="sm"
-                      onClick={handleSearch}
-                      className="w-8 h-8 p-0 bg-black hover:bg-black hover:cursor-pointer text-white rounded-lg"
-                    >
-                      <ArrowRight className="w-5 h-5 text-white" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Trending Destinations */}
-            <div className="mb-12">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-medium text-gray-900">
-                  Trending Destinations
-                </h2>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </div>
-
-              <div className="flex gap-4 overflow-x-auto pb-2">
-                {destinations.map((destination) => (
-                  <Link
-                    key={destination.id}
-                    href={`/workspace/city-guide/${destination.id}`}
-                  >
-                    <motion.div className="flex-shrink-0 w-64 cursor-pointer group">
-                      <div className="relative overflow-hidden rounded-lg mb-3 aspect-square">
-                        <Image
-                          src={destination.image || "/placeholder.svg"}
-                          alt={destination.name}
-                          width={300}
-                          height={300}
-                          className="w-full h-full object-cover "
-                        />
-                      </div>
-                      <h3 className="font-medium text-gray-900 mb-1">
-                        {destination.name}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {destination.description}
-                      </p>
-                    </motion.div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>{" "}
-      {/* Chat Sheet */}{" "}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent
-          side="right"
-          className="w-full sm:w-[2800px] lg:w-[2800px] overflow-y-auto border-l px-4 py-2 scrollbar-w-1 scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300"
+        {/* Features Section */}
+        <motion.section
+          className="mb-16"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
         >
-          <SheetHeader className="border-b pb-4 mb-2">
-            <SheetTitle className="flex items-center space-x-2 text-left">
-              <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              </div>
-              <span>Travel Assistant</span>
-            </SheetTitle>
-          </SheetHeader>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                className="text-center p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + index * 0.1, duration: 0.6 }}
+                whileHover={{ y: -5 }}
+              >
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <feature.icon className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
 
-          <div className="mt-1 space-y-6 pb-8">
-            <div className="p-4 bg-orange-200 rounded-lg">
-              <p className="text-gray-700 font-semibold">{searchQuery}</p>
+        {/* Trending Destinations */}
+        <motion.section
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+        >
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Popular Destinations
+              </h2>
+              <p className="text-gray-600">
+                Discover the most loved cities by digital nomads
+              </p>
             </div>
+            <div className="flex items-center gap-2 text-blue-600">
+              <TrendingUp className="w-5 h-5" />
+              <span className="text-sm font-medium">Trending</span>
+            </div>
+          </div>
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-              </div>
-            ) : (
-              chatResponse && (
-                <div className="space-y-4">
-                  <div className="prose prose-sm max-w-none">
-                    <div className="text-sm">
-                      {renderFormattedText(chatResponse)}
-                    </div>
-                  </div>
-
-                  {/* Follow-up Question Input */}
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-900 mb-3">
-                        Ask a follow-up question
-                      </p>
-                      <div className="relative">
-                        <div className="relative border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition-colors">
-                          <Input
-                            placeholder="Ask anything else..."
-                            value={followUpQuery}
-                            onChange={(e) => setFollowUpQuery(e.target.value)}
-                            className="w-full pl-4 pr-12 py-3 text-sm border-0 rounded-lg focus:ring-0 focus:border-0 bg-transparent"
-                            onKeyPress={(e) => e.key === "Enter" && handleFollowUpSearch()}
-                            disabled={isLoading}
-                          />
-                          <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                            <Button
-                              size="sm"
-                              onClick={handleFollowUpSearch}
-                              disabled={isLoading || !followUpQuery.trim()}
-                              className="w-7 h-7 p-0 bg-black hover:bg-gray-800 disabled:bg-gray-300 text-white rounded-md transition-colors"
-                            >
-                              <ArrowRight className="w-4 h-4" />
-                            </Button>
-                          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {destinations.map((destination, index) => (
+              <motion.div
+                key={destination.id}
+                className="group cursor-pointer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 + index * 0.1, duration: 0.6 }}
+                whileHover={{ y: -5 }}
+              >
+                <Link href={`/workspace/city-guide/${destination.id}`}>
+                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+                    <div className="relative h-48 overflow-hidden">
+                      <Image
+                        src={destination.image || "/placeholder.svg"}
+                        alt={destination.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span className="text-sm font-medium">4.8</span>
                         </div>
                       </div>
                     </div>
-
-                    {/* Quick Action Buttons */}
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFollowUpQuery("Tell me more about this")}
-                        disabled={isLoading}
-                        className="text-xs px-3 py-1 h-auto border-gray-300 hover:bg-gray-50"
-                      >
-                        Tell me more
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFollowUpQuery("What are the opening hours?")}
-                        disabled={isLoading}
-                        className="text-xs px-3 py-1 h-auto border-gray-300 hover:bg-gray-50"
-                      >
-                        Opening hours
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFollowUpQuery("How do I get there?")}
-                        disabled={isLoading}
-                        className="text-xs px-3 py-1 h-auto border-gray-300 hover:bg-gray-50"
-                      >
-                        Directions
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFollowUpQuery("What's the price range?")}
-                        disabled={isLoading}
-                        className="text-xs px-3 py-1 h-auto border-gray-300 hover:bg-gray-50"
-                      >
-                        Price range
-                      </Button>
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xl font-bold text-gray-900">
+                          {destination.name}
+                        </h3>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      </div>
+                      <p className="text-gray-600 mb-4">
+                        {destination.description}
+                      </p>
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          Popular destination
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          Year-round
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            )}
+                </Link>
+              </motion.div>
+            ))}
           </div>
-        </SheetContent>
-      </Sheet>
+        </motion.section>
+
+        {/* Call to Action */}
+        <motion.section
+          className="text-center mt-16"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+        >
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-12 text-white">
+            <h2 className="text-3xl font-bold mb-4">
+              Ready to Explore Sri Lanka?
+            </h2>
+            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+              Ask our AI assistant anything about Sri Lankan destinations, culture, 
+              travel tips, or digital nomad life. Get personalized recommendations 
+              tailored to your preferences.
+            </p>
+            <Button
+              onClick={handleSearch}
+              className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-4 text-lg rounded-xl transition-all duration-200"
+            >
+              <Sparkles className="w-5 h-5 mr-2" />
+              Start Your Journey
+            </Button>
+          </div>
+        </motion.section>
+      </div>
+
+      {/* Advanced Chat Sheet */}
+      <AdvancedChatSheet
+        isOpen={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        searchQuery={searchQuery}
+        chatResponse={chatResponse}
+        isLoading={isLoading}
+        followUpQuery={followUpQuery}
+        setFollowUpQuery={setFollowUpQuery}
+        onFollowUpSearch={handleFollowUpSearch}
+        title="Sri Lanka Travel Assistant"
+      />
     </div>
   );
 }
