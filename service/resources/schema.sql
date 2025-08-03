@@ -1,4 +1,4 @@
--- Create the meetups table
+-- meetups table
 CREATE TABLE IF NOT EXISTS meetups (
     id SERIAL PRIMARY KEY,
     event_id VARCHAR(255) UNIQUE NOT NULL,
@@ -20,8 +20,20 @@ CREATE TABLE IF NOT EXISTS meetups (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index on event_id for faster lookups
-CREATE INDEX IF NOT EXISTS idx_meetups_event_id ON meetups(event_id);
 
--- Create index on created_at for sorting
+CREATE INDEX IF NOT EXISTS idx_meetups_event_id ON meetups(event_id);
 CREATE INDEX IF NOT EXISTS idx_meetups_created_at ON meetups(created_at);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id SERIAL PRIMARY KEY,
+    message_id VARCHAR(255) UNIQUE NOT NULL,
+    meetup_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    user_name VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    created_at VARCHAR(255) NOT NULL,
+    FOREIGN KEY (meetup_id) REFERENCES meetups(event_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_meetup_id ON chat_messages(meetup_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
