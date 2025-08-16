@@ -2,6 +2,7 @@ import 'service.chat;
 import 'service.city_guide;
 import 'service.jobs;
 import 'service.meetups;
+import 'service.tools;
 import 'service.users;
 
 import ballerina/http;
@@ -196,6 +197,27 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
+    //mini tools
+
+    resource function get api/weather() returns json|http:InternalServerError {
+        tools:WeatherResponse|error result = tools:getCurrentWeather();
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "error fetching weather: " + result.message()}
+            };
+        }
+        return result.toJson();
+    }
+
+    resource function get api/convert(decimal amount, string base, string target = "LKR") returns json|http:InternalServerError {
+        tools:CurrencyResponse|error result = tools:convertCurrency(amount, base, target);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error converting currency: " + result.message()}
+            };
+        }
+        return result.toJson();
+    }
 }
 
 public function main() returns error? {
