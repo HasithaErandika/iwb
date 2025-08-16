@@ -73,7 +73,7 @@ export default function HomePage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-xl text-gray-600 max-w-3xl mx-auto"
           >
-            Discover the perfect destinations for digital nomads in Sri Lanka. 
+            Discover the perfect destinations for digital nomads in Sri Lanka.
             Get personalized recommendations, local insights, and everything you need to plan your adventure.
           </motion.p>
         </div>
@@ -138,99 +138,122 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {destinations.map((destination, index) => (
-              <motion.div
-                key={destination.id}
-                className="group cursor-pointer"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 + index * 0.1, duration: 0.6 }}
-                whileHover={{ y: -5 }}
-              >
-                <Link href={`/workspace/city-guide/${destination.id}`}>
-                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
-                    <div className="relative h-48 overflow-hidden">
-                      <Image
-                        src={destination.image || "/placeholder.svg"}
-                        alt={destination.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-sm font-medium">4.8</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xl font-bold text-gray-900">
-                          {destination.name}
-                        </h3>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                      </div>
-                      <p className="text-gray-600 mb-4">
-                        {destination.description}
-                      </p>
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          Popular destination
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          Year-round
-                        </span>
-                      </div>
-                    </div>
+          {/* Follow-up Question Input */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-900 mb-3">
+                Ask a follow-up question
+              </p>
+              <div className="relative">
+                <div className="relative border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition-colors">
+                  <Input
+                    placeholder="Ask anything else..."
+                    value={followUpQuery}
+                    onChange={(e) => setFollowUpQuery(e.target.value)}
+                    className="w-full pl-4 pr-12 py-3 text-sm border-0 rounded-lg focus:ring-0 focus:border-0 bg-transparent"
+                    onKeyPress={(e) => e.key === "Enter" && handleFollowUpSearch()}
+                    disabled={isLoading}
+                  />
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                    <Button
+                      size="sm"
+                      onClick={handleFollowUpSearch}
+                      disabled={isLoading || !followUpQuery.trim()}
+                      className="w-7 h-7 p-0 bg-black hover:bg-gray-800 disabled:bg-gray-300 text-white rounded-md transition-colors"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
                   </div>
-                </Link>
-              </motion.div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFollowUpQuery("Tell me more about this")}
+                disabled={isLoading}
+                className="text-xs px-3 py-1 h-auto border-gray-300 hover:bg-gray-50"
+              >
+                Tell me more
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFollowUpQuery("What are the opening hours?")}
+                disabled={isLoading}
+                className="text-xs px-3 py-1 h-auto border-gray-300 hover:bg-gray-50"
+              >
+                Opening hours
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFollowUpQuery("How do I get there?")}
+                disabled={isLoading}
+                className="text-xs px-3 py-1 h-auto border-gray-300 hover:bg-gray-50"
+              >
+                Directions
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFollowUpQuery("What's the price range?")}
+                disabled={isLoading}
+                className="text-xs px-3 py-1 h-auto border-gray-300 hover:bg-gray-50"
+              >
+                Price range
+              </Button>
+            </div>
+          </div>
+        </Link>
+      </motion.div>
             ))}
-          </div>
-        </motion.section>
-
-        {/* Call to Action */}
-        <motion.section
-          className="text-center mt-16"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.6 }}
-        >
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-12 text-white">
-            <h2 className="text-3xl font-bold mb-4">
-              Ready to Explore Sri Lanka?
-            </h2>
-            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Ask our AI assistant anything about Sri Lankan destinations, culture, 
-              travel tips, or digital nomad life. Get personalized recommendations 
-              tailored to your preferences.
-            </p>
-            <Button
-              onClick={handleSearch}
-              className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-4 text-lg rounded-xl transition-all duration-200"
-            >
-              <Sparkles className="w-5 h-5 mr-2" />
-              Start Your Journey
-            </Button>
-          </div>
-        </motion.section>
-      </div>
-
-      {/* Advanced Chat Sheet */}
-      <AdvancedChatSheet
-        isOpen={isSheetOpen}
-        onOpenChange={setIsSheetOpen}
-        searchQuery={searchQuery}
-        chatResponse={chatResponse}
-        isLoading={isLoading}
-        followUpQuery={followUpQuery}
-        setFollowUpQuery={setFollowUpQuery}
-        onFollowUpSearch={handleFollowUpSearch}
-        title="Sri Lanka Travel Assistant"
-      />
     </div>
+        </motion.section >
+
+    {/* Call to Action */ }
+    < motion.section
+  className = "text-center mt-16"
+  initial = {{ opacity: 0, y: 40 }
+}
+animate = {{ opacity: 1, y: 0 }}
+transition = {{ delay: 0.8, duration: 0.6 }}
+        >
+  <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-12 text-white">
+    <h2 className="text-3xl font-bold mb-4">
+      Ready to Explore Sri Lanka?
+    </h2>
+    <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+      Ask our AI assistant anything about Sri Lankan destinations, culture,
+      travel tips, or digital nomad life. Get personalized recommendations
+      tailored to your preferences.
+    </p>
+    <Button
+      onClick={handleSearch}
+      className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-4 text-lg rounded-xl transition-all duration-200"
+    >
+      <Sparkles className="w-5 h-5 mr-2" />
+      Start Your Journey
+    </Button>
+  </div>
+        </motion.section >
+      </div >
+
+  {/* Advanced Chat Sheet */ }
+  < AdvancedChatSheet
+isOpen = { isSheetOpen }
+onOpenChange = { setIsSheetOpen }
+searchQuery = { searchQuery }
+chatResponse = { chatResponse }
+isLoading = { isLoading }
+followUpQuery = { followUpQuery }
+setFollowUpQuery = { setFollowUpQuery }
+onFollowUpSearch = { handleFollowUpSearch }
+title = "Sri Lanka Travel Assistant"
+  />
+    </div >
   );
 }
