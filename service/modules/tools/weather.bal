@@ -17,7 +17,7 @@ public type WeatherResponse record {|
     WeatherData? data?;
 |};
 
-public function getCurrentWeather() returns WeatherResponse|error {
+public isolated function getCurrentWeather() returns WeatherResponse|error {
     string path = string `/data/3.0/onecall?lat=7.8731&lon=80.7718&appid=${openWeatherApi}`;
 
     json response = check weatherClient->get(path);

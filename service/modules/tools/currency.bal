@@ -17,7 +17,7 @@ public type CurrencyResponse record {|
     ConversionData? data?;
 |};
 
-public function convertCurrency(decimal amount, string base, string target = "LKR") returns CurrencyResponse|error {
+public isolated function convertCurrency(decimal amount, string base, string target = "LKR") returns CurrencyResponse|error {
     string path = string `/api/rates/latest/${base}?target=${target}`;
 
     json response = check currencyClient->get(path);

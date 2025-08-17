@@ -177,7 +177,7 @@ public function saveChatMessage(ChatMessageData chatData) returns ChatMessage|er
     };
 }
 
-public function getChatHistory(string meetupId) returns ChatHistoryResponse|error {
+public isolated function getChatHistory(string meetupId) returns ChatHistoryResponse|error {
     utils:ChatMessageRecord[]|sql:Error dbResult = utils:getChatMessagesByMeetupId(meetupId);
     if dbResult is sql:Error {
         return {success: false, message: "Failed to fetch chat history: " + dbResult.message()};

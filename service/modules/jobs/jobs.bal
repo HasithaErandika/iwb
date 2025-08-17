@@ -3,28 +3,30 @@ import ballerina/lang.regexp;
 
 final http:Client workingNomadsClient = check new ("https://www.workingnomads.com");
 
-public function fetchJobs() returns Job[]|error {
+public isolated function fetchJobs() returns Job[]|error {
     json response = check workingNomadsClient->get(path = "/api/exposed_jobs/");
     return check response.cloneWithType();
 }
 
-public function fetchFilteredJobs(JobFilters filters) returns Job[]|error {
+public isolated function fetchFilteredJobs(readonly & JobFilters filters) returns Job[]|error {
     Job[] allJobs = check fetchJobs();
-    return allJobs.filter(job => matchesFilters(job, filters));
+    return allJobs.filter(isolated function(Job job) returns boolean {
+        return matchesFilters(job, filters);
+    });
 }
 
-function matchesFilters(Job job, JobFilters filters) returns boolean {
+isolated function matchesFilters(Job job, JobFilters filters) returns boolean {
     return (filters.positionType is () || containsPositionType(job, <PositionType>filters.positionType)) &&
             (filters.category is () || job.category_name == <Category>filters.category) &&
             matchesSalaryRange(job, filters.minSalary, filters.maxSalary);
 }
 
-function containsPositionType(Job job, PositionType positionType) returns boolean {
+isolated function containsPositionType(Job job, PositionType positionType) returns boolean {
     string combinedText = (job.title + " " + job.description).toLowerAscii();
     return combinedText.includes(positionType.toLowerAscii());
 }
 
-function matchesSalaryRange(Job job, int? minSalary, int? maxSalary) returns boolean {
+isolated function matchesSalaryRange(Job job, int? minSalary, int? maxSalary) returns boolean {
     int?|error jobSalaryResult = extractSalaryFromJob(job);
     if jobSalaryResult is error {
         return true;
@@ -36,7 +38,7 @@ function matchesSalaryRange(Job job, int? minSalary, int? maxSalary) returns boo
             (maxSalary is () || jobSalary <= maxSalary);
 }
 
-function extractSalaryFromJob(Job job) returns int?|error {
+isolated function extractSalaryFromJob(Job job) returns int?|error {
     string text = (job.title + " " + job.description).toLowerAscii();
 
     string:RegExp salaryPattern = re `\$(\d{1,3}(?:,\d{3})*k?|\d+k?)`;

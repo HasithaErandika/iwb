@@ -8,7 +8,7 @@ final http:Client perplexityClient = check new ("https://api.perplexity.ai",
     }
 );
 
-public function askAnything(string userMessage) returns CityGuideResponse|error {
+public isolated function askAnything(string userMessage) returns CityGuideResponse|error {
     PerplexityRequest requestPayload = {
         model: "sonar-pro",
         messages: [

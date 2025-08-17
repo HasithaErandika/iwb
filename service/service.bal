@@ -2,6 +2,7 @@ import 'service.chat;
 import 'service.city_guide;
 import 'service.jobs;
 import 'service.meetups;
+import 'service.places;
 import 'service.tools;
 import 'service.users;
 
@@ -19,7 +20,7 @@ configurable int port = 8080;
     }
 }
 service / on new http:Listener(port) {
-    resource function get api/jobs(string? positionType = (), int? minSalary = (), int? maxSalary = (), string? category = ())
+    isolated resource function get api/jobs(string? positionType = (), int? minSalary = (), int? maxSalary = (), string? category = ())
             returns jobs:Job[]|http:BadRequest|http:InternalServerError {
 
         jobs:JobFilters filters = {minSalary, maxSalary};
@@ -40,11 +41,11 @@ service / on new http:Listener(port) {
             filters.category = cat;
         }
 
-        jobs:Job[]|error jobsResult = jobs:fetchFilteredJobs(filters);
+        jobs:Job[]|error jobsResult = jobs:fetchFilteredJobs(<jobs:JobFilters & readonly>filters);
         return jobsResult is error ? <http:InternalServerError>{body: {message: "Failed to fetch jobs", details: jobsResult.message()}} : jobsResult;
     }
 
-    resource function get api/meetups() returns json|http:InternalServerError {
+    isolated resource function get api/meetups() returns json|http:InternalServerError {
         meetups:MeetupListResponse|error result = meetups:getAllMeetups();
         if result is error {
             return <http:InternalServerError>{body: {success: false, message: "Error fetching meetups: " + result.message()}};
@@ -52,7 +53,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function get api/meetups/[string eventId]() returns json|http:NotFound|http:InternalServerError {
+    isolated resource function get api/meetups/[string eventId]() returns json|http:NotFound|http:InternalServerError {
         meetups:MeetupResponse|error result = meetups:getMeetupById(eventId);
         if result is error {
             return <http:InternalServerError>{
@@ -69,7 +70,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function delete api/meetups/[string eventId]() returns json|http:NotFound|http:InternalServerError {
+    isolated resource function delete api/meetups/[string eventId]() returns json|http:NotFound|http:InternalServerError {
         meetups:EventCreationResult|error result = meetups:deleteMeetup(eventId);
         if result is error {
             return <http:InternalServerError>{
@@ -86,7 +87,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function post event/create(http:Request req) returns json|error {
+    isolated resource function post event/create(http:Request req) returns json|error {
         meetups:EventCreationResult|error result = meetups:createMeetup(req);
         if result is error {
             return {success: false, message: "Error creating event: " + result.message()};
@@ -94,7 +95,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function post api/chat(@http:Payload city_guide:UserChatRequest chatRequest)
+    isolated resource function post api/chat(@http:Payload city_guide:UserChatRequest chatRequest)
     returns json|http:BadRequest|http:InternalServerError {
 
         if chatRequest.message.trim() == "" {
@@ -113,7 +114,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function post api/users(@http:Payload users:UserCreateRequest userRequest)
+    isolated resource function post api/users(@http:Payload users:UserCreateRequest userRequest)
     returns json|http:BadRequest|http:InternalServerError {
 
         if userRequest.userId.trim() == "" || userRequest.email.trim() == "" ||
@@ -133,7 +134,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function get api/users() returns json|http:InternalServerError {
+    isolated resource function get api/users() returns json|http:InternalServerError {
         users:UserListResponse|error result = users:getAllUsers();
         if result is error {
             return <http:InternalServerError>{
@@ -143,7 +144,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function get api/users/[string userId]() returns json|http:NotFound|http:InternalServerError {
+    isolated resource function get api/users/[string userId]() returns json|http:NotFound|http:InternalServerError {
         users:UserResponse|error result = users:getUserById(userId);
         if result is error {
             return <http:InternalServerError>{
@@ -160,7 +161,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function put api/users/[string userId](@http:Payload users:UserUpdateRequest updateRequest)
+    isolated resource function put api/users/[string userId](@http:Payload users:UserUpdateRequest updateRequest)
     returns json|http:BadRequest|http:InternalServerError {
 
         if userId.trim() == "" {
@@ -180,7 +181,7 @@ service / on new http:Listener(port) {
     }
 
     // chat api ( chat mean ws not ai chat)
-    resource function get api/chat/history/[string meetupId]() returns json|http:NotFound|http:InternalServerError {
+    isolated resource function get api/chat/history/[string meetupId]() returns json|http:NotFound|http:InternalServerError {
         chat:ChatHistoryResponse|error result = chat:getChatHistory(meetupId);
         if result is error {
             return <http:InternalServerError>{
@@ -199,7 +200,7 @@ service / on new http:Listener(port) {
 
     //mini tools
 
-    resource function get api/weather() returns json|http:InternalServerError {
+    isolated resource function get api/weather() returns json|http:InternalServerError {
         tools:WeatherResponse|error result = tools:getCurrentWeather();
         if result is error {
             return <http:InternalServerError>{
@@ -209,7 +210,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    resource function get api/convert(decimal amount, string base, string target = "LKR") returns json|http:InternalServerError {
+    isolated resource function get api/convert(decimal amount, string base, string target = "LKR") returns json|http:InternalServerError {
         tools:CurrencyResponse|error result = tools:convertCurrency(amount, base, target);
         if result is error {
             return <http:InternalServerError>{
@@ -218,6 +219,70 @@ service / on new http:Listener(port) {
         }
         return result.toJson();
     }
+
+    //places api
+
+    isolated resource function post api/places(http:Request req) returns json|http:BadRequest|http:InternalServerError {
+        places:PlaceCreationResult|error result = places:createPlace(req);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error creating place: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:BadRequest>{
+                body: result.toJson()
+            };
+        }
+
+        return result.toJson();
+    }
+
+    isolated resource function get api/places() returns json|http:InternalServerError {
+        places:PlaceListResponse|error result = places:getAllPlaces();
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching places: " + result.message()}
+            };
+        }
+        return result.toJson();
+    }
+
+    isolated resource function get api/places/[string placeId]() returns json|http:NotFound|http:InternalServerError {
+        places:PlaceResponse|error result = places:getPlaceById(placeId);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching place: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>
+            {
+                body: {success: false, message: result.message}
+            };
+        }
+        return result.toJson();
+    }
+
+    isolated resource function delete api/places/[string placeId]() returns json|http:NotFound|http:InternalServerError {
+        places:PlaceCreationResult|error result = places:deletePlace(placeId);
+        if result is error {
+            return <http:InternalServerError>
+            {
+                body: {success: false, message: "Error deleting place: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>{
+                body: result.toJson()
+            };
+        }
+        return result.toJson();
+    }
+
 }
 
 public function main() returns error? {

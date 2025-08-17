@@ -20,9 +20,32 @@ CREATE TABLE IF NOT EXISTS meetups (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- places table
+CREATE TABLE IF NOT EXISTS places (
+    id SERIAL PRIMARY KEY,
+    place_id VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    google_maps_url TEXT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    billing VARCHAR(20) NOT NULL,
+    capacity VARCHAR(100) NOT NULL,
+    workspace_types TEXT,
+    amenities TEXT,
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    website TEXT,
+    photo_urls TEXT,
+    created_at VARCHAR(255) NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE INDEX IF NOT EXISTS idx_meetups_event_id ON meetups(event_id);
 CREATE INDEX IF NOT EXISTS idx_meetups_created_at ON meetups(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_places_place_id ON places(place_id);
+CREATE INDEX IF NOT EXISTS idx_places_created_at ON places(created_at);
 
 CREATE TABLE IF NOT EXISTS chat_messages (
     id SERIAL PRIMARY KEY,
