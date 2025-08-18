@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,13 +18,19 @@ import {
   Clock,
   Loader2,
   XCircle,
+  Heart,
+  X,
+  Plus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const API_BASE_URL = "http://localhost:8080";
 
 export default function EventsListing() {
+  const isMobile = useIsMobile();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,6 +38,8 @@ export default function EventsListing() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [savedIds, setSavedIds] = useState([]);
 
   // Fetch meetups from API
   const fetchMeetups = async () => {
@@ -64,6 +72,20 @@ export default function EventsListing() {
   useEffect(() => {
     fetchMeetups();
   }, []);
+
+  // Load and persist saved meetups
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("savedMeetups");
+      if (saved) setSavedIds(JSON.parse(saved));
+    } catch { }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("savedMeetups", JSON.stringify(savedIds));
+    } catch { }
+  }, [savedIds]);
 
   // Extract unique cities and create categories from event data
   const cities = Array.from(
@@ -99,21 +121,24 @@ export default function EventsListing() {
       currency: "USD",
     }).format(amount);
   };
+
   // Filter events based on selections
-  const filteredEvents = events.filter((event) => {
+  const debouncedSearch = useDebouncedValue(searchTerm, 200);
+
+  const filteredEvents = useMemo(() => events.filter((event) => {
     const cityMatch =
       selectedCity === "all" || event.venueName === selectedCity;
     const categoryMatch = selectedCategory === "all";
 
     // Search filter
     const searchMatch =
-      searchTerm === "" ||
-      event.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.venueName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      debouncedSearch === "" ||
+      event.eventName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      event.venueName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       (event.eventDescription &&
         event.eventDescription
           .toLowerCase()
-          .includes(searchTerm.toLowerCase()));
+          .includes(debouncedSearch.toLowerCase()));
 
     // Date filter
     const eventDate = new Date(event.eventStartDate);
@@ -129,16 +154,7 @@ export default function EventsListing() {
     }
 
     return cityMatch && categoryMatch && searchMatch && dateMatch;
-  });
-  // Calculate estimated attendees (since we don't have actual attendee count)
-  const getEstimatedAttendees = (event) => {
-    if (event.hasLimitedCapacity && event.eventCapacity) {
-      // Simulate 60-80% capacity for limited events
-      return Math.floor(event.eventCapacity * (0.6 + Math.random() * 0.2));
-    }
-    // Random number for unlimited events
-    return Math.floor(Math.random() * 50) + 10;
-  };
+  }), [events, selectedCity, selectedCategory, debouncedSearch, dateFilter]);
 
   // Format date for display
   const formatDisplayDate = (dateString) => {
@@ -150,6 +166,7 @@ export default function EventsListing() {
       day: "numeric",
     });
   };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -182,50 +199,94 @@ export default function EventsListing() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-black mb-8">Upcoming Meetups</h1>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-black">Discover meetups near you</h1>
+            <p className="text-gray-600 mt-1">Find events hosted by people in your community.</p>
+          </div>
+          <Link href="/workspace/meetups/create">
+            <Button className="bg-indigo-500 text-white hover:bg-indigo-600">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Meetup
+            </Button>
+          </Link>
+        </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        {/* Search + Filters trigger */}
+        <div className="mb-6 flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
-              placeholder="Search meetups..."
+              placeholder="Search by title, location, or host"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 border-gray-200 focus:border-black focus:ring-black"
+              className="pl-10 h-9 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
             />
           </div>
-
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-full sm:w-48 border-gray-200 focus:border-black focus:ring-black">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by date" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All dates</SelectItem>
-              <SelectItem value="week">Next 7 days</SelectItem>
-              <SelectItem value="month">Next 30 days</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedCity} onValueChange={setSelectedCity}>
-            <SelectTrigger className="w-full sm:w-48 border-gray-200 focus:border-black focus:ring-black">
-              <MapPin className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by location" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All locations</SelectItem>
-              {cities.map((city) => (
-                <SelectItem key={city} value={city}>
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Sheet open={isFiltersOpen} onOpenChange={(open) => !open && setIsFiltersOpen(false)}>
+            <SheetTrigger asChild>
+              <Button className="h-9 px-4 bg-indigo-500 text-white hover:bg-indigo-600" onClick={() => setIsFiltersOpen(true)}>
+                Advanced Filters
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className={`${isMobile
+                ? "max-w-[95%] max-h-[80vh] p-4 rounded-xl"
+                : "max-w-3xl p-6 rounded-xl"
+                } overflow-hidden flex flex-col [&>button]:hidden`}
+            >
+              <div className="absolute right-3 top-3 z-50">
+                <Button variant="ghost" size="icon" onClick={() => setIsFiltersOpen(false)} className="h-8 w-8 rounded-full hover:bg-gray-100">
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </div>
+              <SheetHeader className="p-4 pb-2">
+                <SheetTitle className="text-xl " >Advanced Filters</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-3">
+                <div className="w-full sm:max-w-xs">
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Date</label>
+                  <Select value={dateFilter} onValueChange={setDateFilter}>
+                    <SelectTrigger aria-label="Date" className="h-9 border-gray-200 text-sm w-full">
+                      <SelectValue placeholder="Any time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any time</SelectItem>
+                      <SelectItem value="week">Next 7 days</SelectItem>
+                      <SelectItem value="month">Next 30 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-full sm:max-w-xs">
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Location</label>
+                  <Select value={selectedCity} onValueChange={setSelectedCity}>
+                    <SelectTrigger aria-label="Location" className="h-9 border-gray-200 text-sm w-full">
+                      <SelectValue placeholder="All locations" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All locations</SelectItem>
+                      {cities.map((city) => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <SheetFooter className="mt-6 flex flex-col gap-2 px-4 sm:px-0">
+                <Button variant="ghost" className="w-full sm:max-w-xs" onClick={() => { setSelectedCity("all"); setDateFilter("all"); }}>Clear</Button>
+                <SheetClose asChild>
+                  <Button className="bg-black text-white hover:bg-neutral-900 w-full sm:max-w-xs">Apply</Button>
+                </SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -239,62 +300,43 @@ export default function EventsListing() {
                 key={event.eventId}
                 href={`/workspace/meetups/${event.eventId}`}
               >
-                <div className="border border-gray-200 rounded-lg overflow-hidden hover:border-black transition-colors cursor-pointer">
-                  <img
-                    src={
-                      event.imageUrl || "/placeholder.svg?height=200&width=400"
-                    }
-                    alt={event.eventName}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "/placeholder.svg?height=200&width=400";
-                    }}
-                  />
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg text-black mb-2">
-                      {event.eventName}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-1">
-                      {event.venueName}
-                    </p>
-                    <p className="text-gray-600 text-sm mb-3">
-                      {formatDisplayDate(event.eventStartDate)} • {time}
-                    </p>
-
-                    {/* Event badges */}
-                    <div className="flex flex-wrap gap-1 mb-3">
+                <div className="group rounded-xl overflow-hidden border border-gray-200 transition-all cursor-pointer bg-white hover:shadow-sm">
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <img
+                      src={event.imageUrl || "/placeholder.svg?height=400&width=600"}
+                      alt={event.eventName}
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      onError={(e) => { e.currentTarget.src = "/placeholder.svg?height=400&width=600"; }}
+                    />
+                    <button
+                      onClick={(e) => { e.preventDefault(); setSavedIds((prev) => prev.includes(event.eventId) ? prev.filter(id => id !== event.eventId) : [...prev, event.eventId]); }}
+                      aria-label="Save meetup"
+                      className="absolute top-3 right-3 inline-flex items-center justify-center h-9 w-9 rounded-full bg-white/90 text-black shadow-sm hover:bg-white"
+                    >
+                      <Heart className={`h-5 w-5 ${savedIds.includes(event.eventId) ? "fill-red-500 text-red-500" : ""}`} />
+                    </button>
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-medium text-[15px] text-black truncate">{event.eventName}</h3>
+                    <p className="text-[13px] text-gray-600 truncate">{event.venueName}</p>
+                    <p className="text-[13px] text-gray-600 mt-1">{formatDisplayDate(event.eventStartDate)} • {time}</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
                       {event.isPaidEvent && (
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-green-100 text-green-800"
-                        >
+                        <Badge variant="secondary" className="text-[11px] bg-green-100 text-green-800">
                           {formatCurrency(event.eventCost)}
                         </Badge>
                       )}
                       {event.hasLimitedCapacity && (
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-orange-100 text-orange-800"
-                        >
+                        <Badge variant="secondary" className="text-[11px] bg-orange-100 text-orange-800">
                           Limited ({event.eventCapacity} max)
                         </Badge>
                       )}
                       {event.requireApproval && (
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-blue-100 text-blue-800"
-                        >
+                        <Badge variant="secondary" className="text-[11px] bg-blue-100 text-blue-800">
                           Approval Required
                         </Badge>
                       )}
                     </div>
-
-                    {event.eventDescription && (
-                      <p className="text-gray-700 text-sm line-clamp-2">
-                        {event.eventDescription}
-                      </p>
-                    )}
                   </div>
                 </div>
               </Link>
@@ -310,21 +352,31 @@ export default function EventsListing() {
             {(searchTerm !== "" ||
               selectedCity !== "all" ||
               dateFilter !== "all") && (
-              <Button
-                onClick={() => {
-                  setSearchTerm("");
-                  setSelectedCity("all");
-                  setDateFilter("all");
-                }}
-                variant="outline"
-                className="mt-4"
-              >
-                Clear Filters
-              </Button>
-            )}
+                <Button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedCity("all");
+                    setDateFilter("all");
+                  }}
+                  variant="outline"
+                  className="mt-4"
+                >
+                  Clear Filters
+                </Button>
+              )}
           </div>
         )}
       </div>
     </div>
   );
+}
+
+// Small debounced value hook to keep typing smooth and avoid excessive filtering
+function useDebouncedValue(value, delayMs) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+  return debounced;
 }

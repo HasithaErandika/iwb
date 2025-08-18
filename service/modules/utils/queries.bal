@@ -251,6 +251,25 @@ public type ChatMessageInsert record {|
     string createdAt;
 |};
 
+// city chat types
+public type CityChatMessageRecord record {|
+    string message_id;
+    string city_id;
+    string user_id;
+    string user_name;
+    string message;
+    string created_at;
+|};
+
+public type CityChatMessageInsert record {|
+    string messageId;
+    string cityId;
+    string userId;
+    string userName;
+    string message;
+    string createdAt;
+|};
+
 // chat
 public function insertChatMessage(ChatMessageInsert messageData) returns sql:ExecutionResult|sql:Error {
     sql:ParameterizedQuery insertQuery = `
@@ -278,4 +297,31 @@ public isolated function getChatMessagesByMeetupId(string meetupId) returns Chat
         select message;
 }
 
-// TODO : need to cleanup this
+// Note: City chat reads/writes use the dedicated city_chat table via functions below
+
+// city chat functions
+public function insertCityChatMessage(CityChatMessageInsert messageData) returns sql:ExecutionResult|sql:Error {
+    sql:ParameterizedQuery insertQuery = `
+        INSERT INTO city_chat (
+            message_id, city_id, user_id, user_name, message, created_at
+        ) VALUES (
+            ${messageData.messageId}, ${messageData.cityId}, ${messageData.userId}, 
+            ${messageData.userName}, ${messageData.message}, ${messageData.createdAt}
+        )
+    `;
+
+    return dbClient->execute(insertQuery);
+}
+
+public isolated function getCityChatMessagesByCityId(string cityId) returns CityChatMessageRecord[]|sql:Error {
+    sql:ParameterizedQuery selectQuery = `
+        SELECT message_id, city_id, user_id, user_name, message, created_at
+        FROM city_chat 
+        WHERE city_id = ${cityId}
+        ORDER BY created_at ASC
+    `;
+
+    stream<CityChatMessageRecord, sql:Error?> messageStream = dbClient->query(selectQuery);
+    return from CityChatMessageRecord message in messageStream
+        select message;
+}

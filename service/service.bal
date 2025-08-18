@@ -1,5 +1,6 @@
 import 'service.chat;
 import 'service.city_guide;
+import 'service.city_rank;
 import 'service.jobs;
 import 'service.meetups;
 import 'service.places;
@@ -41,7 +42,8 @@ service / on new http:Listener(port) {
             filters.category = cat;
         }
 
-        jobs:Job[]|error jobsResult = jobs:fetchFilteredJobs(<jobs:JobFilters & readonly>filters);
+        jobs:JobFilters & readonly roFilters = <jobs:JobFilters & readonly>filters.cloneReadOnly();
+        jobs:Job[]|error jobsResult = jobs:fetchFilteredJobs(roFilters);
         return jobsResult is error ? <http:InternalServerError>{body: {message: "Failed to fetch jobs", details: jobsResult.message()}} : jobsResult;
     }
 
@@ -198,6 +200,23 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
+    isolated resource function get api/chat/history/city/[string cityId]() returns json|http:NotFound|http:InternalServerError {
+        chat:ChatHistoryResponse|error result = chat:getCityChatHistory(cityId);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching city chat history: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>{
+                body: {success: false, message: result.message}
+            };
+        }
+
+        return result.toJson();
+    }
+
     //mini tools
 
     isolated resource function get api/weather() returns json|http:InternalServerError {
@@ -280,6 +299,139 @@ service / on new http:Listener(port) {
                 body: result.toJson()
             };
         }
+        return result.toJson();
+    }
+
+    isolated resource function get api/cities() returns json|http:InternalServerError {
+        city_rank:CityListResponse|error result = city_rank:getAllCities();
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching cities: " + result.message()}
+            };
+        }
+        return result.toJson();
+    }
+
+    isolated resource function get api/cities/[string slug]() returns json|http:NotFound|http:InternalServerError {
+        city_rank:CityResponse|error result = city_rank:getCityBySlug(slug);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching city: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>{
+                body: {success: false, message: result.message}
+            };
+        }
+
+        return result.toJson();
+    }
+
+    isolated resource function post api/cities(http:Request req) returns json|http:BadRequest|http:InternalServerError {
+        city_rank:CityCreationResult|error result = city_rank:createCity(req);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error creating city: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:BadRequest>{
+                body: result.toJson()
+            };
+        }
+
+        return result.toJson();
+    }
+
+    isolated resource function post api/cities/[string cityId]/ratings(@http:Payload city_rank:CityRatingRequest ratingRequest)
+    returns json|http:BadRequest|http:NotFound|http:InternalServerError {
+
+        if cityId.trim() == "" {
+            return <http:BadRequest>{
+                body: {success: false, message: "City ID is required"}
+            };
+        }
+
+        if ratingRequest.userId.trim() == "" {
+            return <http:BadRequest>{
+                body: {success: false, message: "User ID is required"}
+            };
+        }
+
+        city_rank:CityRatingResponse|error result = city_rank:submitCityRating(cityId, ratingRequest);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error submitting rating: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            if result.message.includes("not found") {
+                return <http:NotFound>{
+                    body: {success: false, message: result.message}
+                };
+            }
+            return <http:BadRequest>{
+                body: {success: false, message: result.message}
+            };
+        }
+
+        return result.toJson();
+    }
+
+    isolated resource function get api/cities/[string cityId]/chat() returns json|http:NotFound|http:InternalServerError {
+        city_rank:CityChatResponse|error result = city_rank:getCityChat(cityId);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error fetching chat messages: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>{
+                body: {success: false, message: result.message}
+            };
+        }
+
+        return result.toJson();
+    }
+
+    isolated resource function post api/cities/[string cityId]/chat(@http:Payload city_rank:CityChatRequest chatRequest)
+    returns json|http:BadRequest|http:NotFound|http:InternalServerError {
+
+        if cityId.trim() == "" {
+            return <http:BadRequest>{
+                body: {success: false, message: "City ID is required"}
+            };
+        }
+
+        if chatRequest.userId.trim() == "" || chatRequest.userName.trim() == "" || chatRequest.message.trim() == "" {
+            return <http:BadRequest>{
+                body: {success: false, message: "User ID, user name, and message are required"}
+            };
+        }
+
+        city_rank:CityChatResponse|error result = city_rank:postCityChat(cityId, chatRequest);
+        if result is error {
+            return <http:InternalServerError>{
+                body: {success: false, message: "Error sending chat message: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            if result.message.includes("not found") {
+                return <http:NotFound>{
+                    body: {success: false, message: result.message}
+                };
+            }
+            return <http:BadRequest>{
+                body: {success: false, message: result.message}
+            };
+        }
+
         return result.toJson();
     }
 

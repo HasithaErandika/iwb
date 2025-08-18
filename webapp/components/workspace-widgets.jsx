@@ -1,133 +1,307 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
+import { Cloud, MapPin, ArrowLeftRight } from "lucide-react";
 
-import { Cloud, MapPin } from "lucide-react";
+import { fetchLatestNews, fetchWeather, fetchCurrencyConversion } from "@/lib/tools";
 
-const cities = [
-    { id: "colombo", name: "Colombo" },
-    { id: "bangkok", name: "Bangkok" },
-    { id: "lisbon", name: "Lisbon" },
-    { id: "tbilisi", name: "Tbilisi" },
-    { id: "bali", name: "Denpasar (Bali)" },
-    { id: "saigon", name: "Ho Chi Minh City" },
-];
+
 
 export function WorkspaceWidgets() {
-    const [cityA, setCityA] = useState("colombo");
-    const [cityB, setCityB] = useState("bangkok");
-    const [open, setOpen] = useState(false);
-    const [simOpen, setSimOpen] = useState(false);
-    const [simCountry, setSimCountry] = useState("lk");
-    const [planA, setPlanA] = useState("dialog20");
-    const [planB, setPlanB] = useState("airalo5");
+    const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const [fromTimeZone, setFromTimeZone] = useState(browserTimeZone);
+    const [toTimeZone, setToTimeZone] = useState("UTC");
+    const [now, setNow] = useState(new Date());
 
+    const [newsData, setNewsData] = useState([]);
+    const [newsLoading, setNewsLoading] = useState(true);
+    const [newsError, setNewsError] = useState(null);
+    const [weatherData, setWeatherData] = useState(null);
+    const [weatherLoading, setWeatherLoading] = useState(true);
+    const [weatherError, setWeatherError] = useState(null);
 
-    const cityName = (id) => cities.find((c) => c.id === id)?.name ?? id;
+    // Currency conversion state
+    const [currencyData, setCurrencyData] = useState(null);
+    const [currencyLoading, setCurrencyLoading] = useState(false);
+    const [currencyError, setCurrencyError] = useState(null);
+    const [fromAmount, setFromAmount] = useState("1");
+    const [fromCurrency, setFromCurrency] = useState("USD");
+    const [toCurrency, setToCurrency] = useState("LKR");
+    const [toAmount, setToAmount] = useState("");
 
-    function plansFor(country) {
-        const all = {
-            lk: [
-                { id: "dialog20", name: "Dialog Tourist eSIM 20GB / 30d" },
-                { id: "airalo5", name: "Airalo Sri Lanka 5GB / 30d" },
-                { id: "hutch10", name: "Hutch Local 10GB / 30d" },
-            ],
-            th: [
-                { id: "ais15", name: "AIS eSIM 15GB / 15d" },
-                { id: "dtac10", name: "DTAC eSIM 10GB / 10d" },
-                { id: "airalo10", name: "Airalo Thailand 10GB / 30d" },
-            ],
-            id: [
-                { id: "telkomsel20", name: "Telkomsel eSIM 20GB / 30d" },
-                { id: "xl10", name: "XL 10GB / 30d" },
-                { id: "airalo3", name: "Airalo Indonesia 3GB / 30d" },
-            ],
+    const kelvinToCelsius = (kelvin) => Math.round(kelvin - 273.15);
+    const getWeatherIcon = (main) => {
+        switch (main?.toLowerCase()) {
+            case 'clouds':
+                return Cloud;
+            case 'clear':
+                return Cloud; //later
+            case 'rain':
+                return Cloud;
+            default:
+                return Cloud;
+        }
+    };
+
+    // --- Time zone utilities ---
+    const commonTimeZones = [
+        "UTC",
+        "Asia/Colombo",
+        "Asia/Kolkata",
+        "Asia/Bangkok",
+        "Asia/Jakarta",
+        "Asia/Singapore",
+        "Asia/Dubai",
+        "Europe/London",
+        "Europe/Paris",
+        "Europe/Berlin",
+        "America/New_York",
+        "America/Chicago",
+        "America/Los_Angeles",
+        "America/Toronto",
+        "America/Sao_Paulo",
+        "Africa/Johannesburg",
+        "Asia/Tokyo",
+        "Australia/Sydney",
+        "Pacific/Auckland",
+    ];
+
+    const formatInTimeZone = (date, timeZone, options) => {
+        return new Intl.DateTimeFormat("en-US", { timeZone, ...options }).format(date);
+    };
+
+    const getPartsInTimeZone = (date, timeZone) => {
+        const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone,
+            hour12: false,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        }).formatToParts(date);
+        const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+        return map;
+    };
+
+    const getOffsetMinutes = (date, timeZone) => {
+        const p = getPartsInTimeZone(date, timeZone);
+        const asUTC = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour), Number(p.minute), Number(p.second));
+        const diffMs = asUTC - date.getTime();
+        return Math.round(diffMs / 60000);
+    };
+
+    const humanOffset = (date, timeZone) => {
+        const mins = getOffsetMinutes(date, timeZone);
+        const sign = mins >= 0 ? "+" : "-";
+        const abs = Math.abs(mins);
+        const h = String(Math.floor(abs / 60)).padStart(2, "0");
+        const m = String(abs % 60).padStart(2, "0");
+        return `UTC${sign}${h}${m !== "00" ? ":" + m : ""}`;
+    };
+
+    const zoneDisplayName = (timeZone) => {
+        const city = timeZone.includes("/") ? timeZone.split("/").pop().replaceAll("_", " ") : timeZone;
+        return city;
+    };
+
+    const ymdInZone = (date, timeZone) => {
+        const p = getPartsInTimeZone(date, timeZone);
+        return `${p.year}-${p.month}-${p.day}`;
+    };
+
+    const dayRelation = (date, fromZone, toZone) => {
+        const a = ymdInZone(date, fromZone);
+        const b = ymdInZone(date, toZone);
+        if (a === b) return "Same day";
+        // Compare as dates
+        const ad = new Date(`${a}T00:00:00Z`);
+        const bd = new Date(`${b}T00:00:00Z`);
+        const diffDays = Math.round((bd.getTime() - ad.getTime()) / 86400000);
+        if (diffDays === 1) return "Tomorrow";
+        if (diffDays === -1) return "Yesterday";
+        return diffDays > 1 ? `${diffDays} days ahead` : `${Math.abs(diffDays)} days behind`;
+    };
+
+    // Currency conversion function
+    const convertCurrency = async (amount, base, target) => {
+        if (!amount || parseFloat(amount) <= 0) {
+            setToAmount("");
+            setCurrencyData(null);
+            return;
+        }
+
+        try {
+            setCurrencyLoading(true);
+            setCurrencyError(null);
+            const result = await fetchCurrencyConversion(parseFloat(amount), base, target);
+
+            if (result.success && result.data) {
+                setCurrencyData(result.data);
+                setToAmount(result.data.result.toFixed(2));
+            } else {
+                setCurrencyError(result.message || "Conversion failed");
+                setToAmount("");
+            }
+        } catch (error) {
+            console.error('Failed to convert currency:', error);
+            setCurrencyError('Failed to convert currency');
+            setToAmount("");
+        } finally {
+            setCurrencyLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        const loadData = async () => {
+            const loadNews = async () => {
+                try {
+                    setNewsLoading(true);
+                    setNewsError(null);
+                    const news = await fetchLatestNews();
+                    setNewsData(news);
+                } catch (error) {
+                    console.error('Failed to fetch news:', error);
+                    setNewsError('Failed to load latest news');
+                    // Fallback to static data if fetch fails
+                    setNewsData([
+                        { title: "Unable to load latest news", src: "System", time: "Now", excerpt: "Please check your connection and try again.", link: "#" }
+                    ]);
+                } finally {
+                    setNewsLoading(false);
+                }
+            };
+
+            const loadWeather = async () => {
+                try {
+                    setWeatherLoading(true);
+                    setWeatherError(null);
+                    const weather = await fetchWeather();
+                    setWeatherData(weather);
+                } catch (error) {
+                    console.error('Failed to fetch weather:', error);
+                    setWeatherError('Failed to load weather data');
+                    setWeatherData(null);
+                } finally {
+                    setWeatherLoading(false);
+                }
+            };
+
+            await Promise.all([loadNews(), loadWeather()]);
         };
-        return all[country] ?? [];
-    }
 
-    function planLabel(id) {
-        const item = [...plansFor("lk"), ...plansFor("th"), ...plansFor("id")].find((p) => p.id === id);
-        return item?.name ?? id;
-    }
+        loadData();
+    }, []);
 
-    function planShort(id) {
-        return planLabel(id).split(" ")[0];
-    }
+    // Initial currency conversion
+    useEffect(() => {
+        convertCurrency(fromAmount, fromCurrency, toCurrency);
+    }, []);
 
-    function compareRows(a, b) {
-        const data = {
-            dialog20: { data: "20GB", validity: "30 days", price: "$12", hotspot: "Yes", fiveg: "No" },
-            airalo5: { data: "5GB", validity: "30 days", price: "$8", hotspot: "Yes", fiveg: "No" },
-            hutch10: { data: "10GB", validity: "30 days", price: "$10", hotspot: "No", fiveg: "No" },
-            ais15: { data: "15GB", validity: "15 days", price: "$14", hotspot: "Yes", fiveg: "Yes" },
-            dtac10: { data: "10GB", validity: "10 days", price: "$9", hotspot: "Yes", fiveg: "Yes" },
-            airalo10: { data: "10GB", validity: "30 days", price: "$12", hotspot: "Yes", fiveg: "No" },
-            telkomsel20: { data: "20GB", validity: "30 days", price: "$13", hotspot: "Yes", fiveg: "Yes" },
-            xl10: { data: "10GB", validity: "30 days", price: "$9", hotspot: "No", fiveg: "No" },
-            airalo3: { data: "3GB", validity: "30 days", price: "$5", hotspot: "Yes", fiveg: "No" },
-        };
+    // Currency conversion when inputs change
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            convertCurrency(fromAmount, fromCurrency, toCurrency);
+        }, 500); // Debounce for 500ms
 
-        const A = data[a] ?? {};
-        const B = data[b] ?? {};
-        return [
-            { k: "Data", a: A.data, b: B.data },
-            { k: "Validity", a: A.validity, b: B.validity },
-            { k: "Price", a: A.price, b: B.price },
-            { k: "Hotspot", a: A.hotspot, b: B.hotspot },
-            { k: "5G", a: A.fiveg, b: B.fiveg },
-        ];
-    }
+        return () => clearTimeout(timeoutId);
+    }, [fromAmount, fromCurrency, toCurrency]);
 
+    useEffect(() => {
+        const id = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(id);
+    }, []);
 
 
     return (
         <div className="px-8 pb-8">
             <div className="max-w-7xl mx-auto grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2 xl:grid-cols-12">
                 {/* Currency converter */}
-                <Card className="rounded-2xl border-gray-200 md:col-span-2 xl:col-span-6 shadow-none h-[280px] overflow-hidden">
+                <Card className="rounded-2xl md:col-span-2 xl:col-span-6 shadow-none h-[280px] overflow-hidden">
                     <CardHeader className="pb-2">
-                        <CardDescription>1 United States Dollar equals</CardDescription>
-                        <CardTitle className="text-2xl md:text-3xl">300.37 Sri Lankan Rupee</CardTitle>
-                        <CardDescription>Aug 9, 13:22 UTC · From Morningstar</CardDescription>
+                        <CardDescription>
+                            {currencyData ? `1 ${currencyData.base} equals` : "1 United States Dollar equals"}
+                        </CardDescription>
+                        <CardTitle className="text-2xl md:text-3xl">
+                            {currencyLoading ? "Loading..." :
+                                currencyData ? `${currencyData.rate.toFixed(2)} ${currencyData.target}` :
+                                    "300.37 Sri Lankan Rupee"}
+                        </CardTitle>
+                        <CardDescription>
+                            {currencyData ? `${new Date(currencyData.timestamp).toLocaleString()} · From ` : "Aug 9, 13:22 UTC · From "}
+                            <a href="https://hexarate.paikama.co/" target="_blank">HexaRate</a>
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
+                        {currencyError && (
+                            <div className="text-center text-red-500 text-sm">
+                                Failed to convert currency
+                            </div>
+                        )}
                         <div className="grid grid-cols-12 gap-3">
                             <div className="col-span-5">
-                                <Input defaultValue="1" className="h-12 rounded-xl" />
+                                <Input
+                                    value={fromAmount}
+                                    onChange={(e) => setFromAmount(e.target.value)}
+                                    className="h-11 !text-lg rounded-xl"
+                                    placeholder="Amount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                />
                             </div>
                             <div className="col-span-7">
-                                <Select defaultValue="usd">
-                                    <SelectTrigger className="h-12 w-full rounded-xl">
+                                <Select value={fromCurrency} onValueChange={setFromCurrency}>
+                                    <SelectTrigger className="!h-11 w-full rounded-xl">
                                         <SelectValue placeholder="Currency" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="usd">United States Dollar</SelectItem>
-                                        <SelectItem value="lkr">Sri Lankan Rupee</SelectItem>
-                                        <SelectItem value="eur">Euro</SelectItem>
+                                        <SelectItem value="USD">United States Dollar</SelectItem>
+                                        <SelectItem value="LKR">Sri Lankan Rupee</SelectItem>
+                                        <SelectItem value="EUR">Euro</SelectItem>
+                                        <SelectItem value="GBP">British Pound</SelectItem>
+                                        <SelectItem value="JPY">Japanese Yen</SelectItem>
+                                        <SelectItem value="AUD">Australian Dollar</SelectItem>
+                                        <SelectItem value="CAD">Canadian Dollar</SelectItem>
+                                        <SelectItem value="CHF">Swiss Franc</SelectItem>
+                                        <SelectItem value="CNY">Chinese Yuan</SelectItem>
+                                        <SelectItem value="INR">Indian Rupee</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div className="grid grid-cols-12 gap-3">
                             <div className="col-span-5">
-                                <Input defaultValue="300.37" className="h-12 rounded-xl" />
+                                <Input
+                                    value={toAmount}
+                                    className="h-11 !text-lg rounded-xl"
+                                    placeholder="Result"
+                                    readOnly
+                                    disabled={currencyLoading}
+                                />
                             </div>
                             <div className="col-span-7">
-                                <Select defaultValue="lkr">
-                                    <SelectTrigger className="h-12 w-full rounded-xl">
+                                <Select value={toCurrency} onValueChange={setToCurrency}>
+                                    <SelectTrigger className="!h-11 w-full rounded-xl">
                                         <SelectValue placeholder="Currency" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="usd">United States Dollar</SelectItem>
-                                        <SelectItem value="lkr">Sri Lankan Rupee</SelectItem>
-                                        <SelectItem value="eur">Euro</SelectItem>
+                                        <SelectItem value="USD">United States Dollar</SelectItem>
+                                        <SelectItem value="LKR">Sri Lankan Rupee</SelectItem>
+                                        <SelectItem value="EUR">Euro</SelectItem>
+                                        <SelectItem value="GBP">British Pound</SelectItem>
+                                        <SelectItem value="JPY">Japanese Yen</SelectItem>
+                                        <SelectItem value="AUD">Australian Dollar</SelectItem>
+                                        <SelectItem value="CAD">Canadian Dollar</SelectItem>
+                                        <SelectItem value="CHF">Swiss Franc</SelectItem>
+                                        <SelectItem value="CNY">Chinese Yuan</SelectItem>
+                                        <SelectItem value="INR">Indian Rupee</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -143,150 +317,179 @@ export function WorkspaceWidgets() {
                     <div className="absolute inset-0 bg-gradient-to-b from-[#4e6b8a] via-[#6f86a6] to-[#a9abb0]" />
                     <div className="absolute -top-10 -right-10 size-40 rounded-full bg-white/10 blur-2xl" />
                     <div className="relative h-full w-full p-5 flex flex-col">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <div className="text-4xl md:text-5xl font-semibold leading-none tracking-tight">29°C</div>
-                                <div className="mt-2 inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-xs md:text-sm backdrop-blur">
-                                    Cloudy
+                        {weatherLoading && (
+                            <div className="flex-1 flex items-center justify-center">
+                                <div className="text-white/80">Loading weather...</div>
+                            </div>
+                        )}
+                        {weatherError && !weatherLoading && (
+                            <div className="flex-1 flex items-center justify-center">
+                                <div className="text-white/80 text-center">
+                                    <div className="text-sm">{weatherError}</div>
                                 </div>
                             </div>
-                            <Cloud className="size-12 md:size-14 text-white/95 drop-shadow-lg" />
-                        </div>
-                        <div className="mt-auto flex items-center gap-2 text-sm md:text-base font-medium text-white/95">
-                            <MapPin className="size-4 md:size-5 text-white/95" />
-                            Kolonnawa, Sri Lanka
-                        </div>
-                        <div className="text-[10px] md:text-xs text-white/70">Updated 2 min ago</div>
+                        )}
+                        {!weatherLoading && weatherData && weatherData.success && weatherData.data && (
+                            <>
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <div className="text-4xl md:text-5xl font-semibold leading-none tracking-tight">
+                                            {kelvinToCelsius(weatherData.data.temperature)}°C
+                                        </div>
+                                        <div className="mt-2 inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-xs md:text-sm backdrop-blur capitalize">
+                                            {weatherData.data.description}
+                                        </div>
+                                    </div>
+                                    {(() => {
+                                        const WeatherIcon = getWeatherIcon(weatherData.data.main);
+                                        return <WeatherIcon className="size-12 md:size-14 text-white/95" />;
+                                    })()}
+                                </div>
+                                <div className="mt-auto flex items-center gap-2 text-sm md:text-base font-medium text-white/95">
+                                    <MapPin className="size-4 md:size-5 text-white/95" />
+                                    {weatherData.data.location}
+                                </div>
+                                <div className="text-[10px] md:text-xs text-white/70">
+                                    Updated {new Date().toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </Card>
 
                 {/* Emergency contacts (replaces Visa Stay Calculator) */}
-                <Card className="rounded-2xl border-red-500 md:col-span-1 xl:col-span-3 h-[280px] shadow-none overflow-hidden">
+                <Card className="rounded-2xl bg-gradient-to-r from-red-50 to-red-50 border border-red-200 md:col-span-1 xl:col-span-3 h-[280px] shadow-none overflow-hidden">
                     <CardHeader className="pb-0 pt-1 gap-0">
                         <CardTitle className="text-lg text-red-600">Emergency Contacts</CardTitle>
                     </CardHeader>
                     <CardContent className="w-full h-full -mt-1 flex flex-col gap-1 text-sm">
                         <div className="grid grid-cols-1 gap-1.5 flex-1 min-h-0 overflow-y-auto pb-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span className="font-medium">Police Emergency</span>
-                                <a className="text-red-600 font-semibold" href="tel:119">119</a>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span className="font-medium">Ambulance / Fire & Rescue</span>
-                                <a className="text-red-600 font-semibold" href="tel:110">110</a>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span className="font-medium">Suwa Seriya Ambulance</span>
-                                <a className="text-red-600 font-semibold" href="tel:1990">1990</a>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span className="font-medium">Tourist Police</span>
-                                <a className="text-red-600 font-semibold" href="tel:1912">1912</a>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span className="font-medium">Disaster Management</span>
-                                <a className="text-red-600 font-semibold" href="tel:117">117</a>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span className="font-medium">Accident Service (Colombo)</span>
-                                <a className="text-red-600 font-semibold" href="tel:0112691111">011-2691111</a>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span className="font-medium">Colombo Fire/Ambulance</span>
-                                <a className="text-red-600 font-semibold" href="tel:0112422222">011-2422222</a>
-                            </div>
+                            {[
+                                {
+                                    name: "Police Emergency",
+                                    number: "119"
+                                },
+                                {
+                                    name: "Ambulance / Fire & Rescue",
+                                    number: "110"
+                                },
+                                {
+                                    name: "Suwa Seriya Ambulance",
+                                    number: "1990"
+                                },
+                                {
+                                    name: "Tourist Police",
+                                    number: "1912"
+                                },
+                                {
+                                    name: "Disaster Management",
+                                    number: "117"
+                                },
+                                {
+                                    name: "Accident Service (Colombo)",
+                                    number: "011-2691111"
+                                },
+                                {
+                                    name: "Colombo Fire/Ambulance",
+                                    number: "011-2422222"
+                                }
+                            ].map(contact => (
+                                <div key={contact.number} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                                    <span className="font-medium">{contact.name}</span>
+                                    <a className="text-red-600 font-semibold" href={`tel:${contact.number}`}>{contact.number}</a>
+                                </div>
+                            ))}
                         </div>
                         <div className="pt-1 mt-auto text-xs text-muted-foreground">Tap a number to dial instantly.</div>
                     </CardContent>
                 </Card>
 
-                {/* Local SIM / eSIM comparator (left small card) */}
-                <Card className="rounded-2xl border-gray-200 md:col-span-1 lg:col-span-2 xl:col-span-4 h-[280px] shadow-none overflow-hidden">
-                    <CardContent className="space-y-1">
-                        <CardTitle className="text-xl pb-3 font-semibold text-gray-800">Compare Plans</CardTitle>
+                {/* Time Zone Converter (replaces SIM comparator) */}
+                <Card className="rounded-2xl  md:col-span-1 lg:col-span-2 xl:col-span-4 h-[280px] shadow-none overflow-hidden">
+                    <CardContent className="space-y-3 h-full flex flex-col">
+                        <CardTitle className="text-xl font-semibold text-gray-800">Time Zone Converter</CardTitle>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="country-select" className="text-xs font-medium text-gray-600">
-                                Country
-                            </Label>
-                            <Select value={simCountry} onValueChange={setSimCountry}>
-                                <SelectTrigger id="country-select" className="h-11 w-full rounded-xl border-2 text-sm">
-                                    <SelectValue placeholder="Select Country" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="lk">Sri Lanka</SelectItem>
-                                    <SelectItem value="th">Thailand</SelectItem>
-                                    <SelectItem value="id">Indonesia</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="plan-a" className="text-xs font-medium text-gray-600 mb-2 block">
-                                    Plan A
-                                </Label>
-                                <Select value={planA} onValueChange={setPlanA}>
-                                    <SelectTrigger id="plan-a" className="h-11 w-full rounded-xl border-2 text-sm">
-                                        <SelectValue placeholder="Choose Plan A" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {plansFor(simCountry).map((p) => (
-                                            <SelectItem key={p.id} value={p.id}>{planLabel(p.id)}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label htmlFor="plan-b" className="text-xs font-medium text-gray-600 mb-2 block">
-                                    Plan B
-                                </Label>
-                                <Select value={planB} onValueChange={setPlanB}>
-                                    <SelectTrigger id="plan-b" className="h-11 w-full rounded-xl border-2 text-sm">
-                                        <SelectValue placeholder="Choose Plan B" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {plansFor(simCountry).map((p) => (
-                                            <SelectItem key={p.id} value={p.id}>{planLabel(p.id)}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="pt-2 border-t border-gray-100">
-                            <Sheet open={simOpen} onOpenChange={setSimOpen}>
-                                <SheetTrigger asChild>
-                                    <Button className="w-full h-10 rounded-xl text-white font-bold text-sm " onClick={() => setSimOpen(true)}>
-                                        Compare Plans
-                                    </Button>
-                                </SheetTrigger>
-                                <SheetContent side="right" className="sm:max-w-md md:max-w-lg">
-                                    <SheetHeader>
-                                        <SheetTitle>Plan comparison</SheetTitle>
-                                        <SheetDescription>{planLabel(planA)} vs {planLabel(planB)}</SheetDescription>
-                                    </SheetHeader>
-                                    <div className="p-4 space-y-4">
-                                        <div className="grid grid-cols-12 items-end">
-                                            <div className="col-span-5 text-xl font-semibold">{planShort(planA)}</div>
-                                            <div className="col-span-2 text-center text-xs uppercase text-muted-foreground">vs</div>
-                                            <div className="col-span-5 text-right text-xl font-semibold">{planShort(planB)}</div>
-                                        </div>
-                                        <div className="rounded-lg border overflow-hidden">
-                                            <div className="grid grid-cols-12 bg-muted/50 text-xs font-medium px-3 py-2">
-                                                <div className="col-span-6">Feature</div>
-                                                <div className="col-span-3 text-right">{planShort(planA)}</div>
-                                                <div className="col-span-3 text-right">{planShort(planB)}</div>
-                                            </div>
-                                            {compareRows(planA, planB).map((row) => (
-                                                <div key={row.k} className="grid grid-cols-12 items-center px-3 py-2 text-sm border-t">
-                                                    <div className="col-span-6 font-medium">{row.k}</div>
-                                                    <div className="col-span-3 text-right">{row.a}</div>
-                                                    <div className="col-span-3 text-right">{row.b}</div>
-                                                </div>
-                                            ))}
-                                        </div>
+                        <div className="mt-1 rounded-xl border bg-gradient-to-r from-blue-50 to-purple-50 px-3 py-2">
+                            <div className="grid grid-cols-12 items-end">
+                                <div className="col-span-5">
+                                    <div className="text-xs text-muted-foreground">{zoneDisplayName(fromTimeZone)} · {humanOffset(now, fromTimeZone)}</div>
+                                    <div className="text-xl font-semibold leading-tight">
+                                        {formatInTimeZone(now, fromTimeZone, { hour: '2-digit', minute: '2-digit' })}
                                     </div>
-                                </SheetContent>
-                            </Sheet>
+                                    <div className="text-[10px] text-muted-foreground">{formatInTimeZone(now, fromTimeZone, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                                </div>
+                                <div className="col-span-2 text-center text-xs uppercase text-muted-foreground">→</div>
+                                <div className="col-span-5 text-right">
+                                    <div className="text-xs text-muted-foreground">{zoneDisplayName(toTimeZone)} · {humanOffset(now, toTimeZone)}</div>
+                                    <div className="text-xl font-semibold leading-tight">
+                                        {formatInTimeZone(now, toTimeZone, { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground">{formatInTimeZone(now, toTimeZone, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-3">
+                            <div className="col-span-5">
+                                <Label className="text-xs font-medium text-gray-600 mb-1 block">From</Label>
+                                <Select value={fromTimeZone} onValueChange={setFromTimeZone}>
+                                    <SelectTrigger className="h-10 w-full rounded-xl border-2 text-sm">
+                                        <SelectValue placeholder="From time zone" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {commonTimeZones.map((tz) => (
+                                            <SelectItem key={tz} value={tz}>
+                                                {zoneDisplayName(tz)} ({humanOffset(now, tz)})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="col-span-2 flex items-end justify-center pb-0.5">
+                                <Button variant="secondary" className="h-10 w-10 rounded-xl" onClick={() => {
+                                    const a = fromTimeZone; const b = toTimeZone; setFromTimeZone(b); setToTimeZone(a);
+                                }}>
+                                    <ArrowLeftRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div className="col-span-5">
+                                <Label className="text-xs font-medium text-gray-600 mb-1 block">To</Label>
+                                <Select value={toTimeZone} onValueChange={setToTimeZone}>
+                                    <SelectTrigger className="h-10 w-full rounded-xl border-2 text-sm">
+                                        <SelectValue placeholder="To time zone" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {commonTimeZones.map((tz) => (
+                                            <SelectItem key={tz} value={tz}>
+                                                {zoneDisplayName(tz)} ({humanOffset(now, tz)})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="mt-auto grid grid-cols-12 gap-1 text-xs text-muted-foreground">
+                            <div className="col-span-7">
+                                {(() => {
+                                    const offFrom = getOffsetMinutes(now, fromTimeZone);
+                                    const offTo = getOffsetMinutes(now, toTimeZone);
+                                    const diffMin = offTo - offFrom;
+                                    const ahead = diffMin > 0;
+                                    const abs = Math.abs(diffMin);
+                                    const h = Math.floor(abs / 60);
+                                    const m = abs % 60;
+                                    return (
+                                        <span>
+                                            {zoneDisplayName(toTimeZone)} is {ahead ? 'ahead of' : 'behind'} {zoneDisplayName(fromTimeZone)} by {h}h{m ? ` ${m}m` : ''}
+                                        </span>
+                                    );
+                                })()}
+                            </div>
+                            <div className="col-span-5 text-right">{dayRelation(now, fromTimeZone, toTimeZone)}</div>
                         </div>
                     </CardContent>
                 </Card>
@@ -320,26 +523,43 @@ export function WorkspaceWidgets() {
                     </CardContent>
                 </Card>
 
-                {/* News column: large card on the right */}
                 <Card className="rounded-2xl border-gray-200 shadow-none md:col-span-2 lg:col-span-3 xl:col-span-5 h-[280px] overflow-hidden">
 
                     <CardContent className="h-full flex flex-col">
-                        <CardTitle className="text-xl pb-3">Latest News</CardTitle>
-                        <div className="grid grid-cols-1 gap-3 flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                            {[
-                                { title: "Mannar project: Energy Minister dismisses claims of threat to birds", src: "Newswire.lk", time: "1 hour ago", excerpt: "Dismissing claims that wind power projects...", link: "#" },
-                                { title: "Booking Train tickets: Mandatory identification verification launched", src: "Newswire.lk", time: "1 hour ago", excerpt: "Sri Lanka Railways has launched a mandatory...", link: "#" },
-                                { title: "Vietnamese woman drowns in Aluthgama", src: "Newswire.lk", time: "1 hour ago", excerpt: "A foreign woman who went for a swim at the...", link: "#" },
-                                { title: "155 bus service recommenced", src: "Newswire.lk", time: "1 hour ago", excerpt: "The 155 bus service from Mattakkuliya to...", link: "#" },
-                            ].map((n, idx) => (
-                                <div key={idx} className="rounded-xl border p-3 bg-card/50">
-                                    <div className="text-base font-semibold leading-snug line-clamp-2">{n.title}</div>
-                                    <div className="mt-1 text-xs text-muted-foreground">{n.src} · {n.time}</div>
-                                    <div className="mt-2 text-sm text-muted-foreground line-clamp-2">{n.excerpt}</div>
-                                    <a href={n.link} className="mt-2 inline-flex items-center text-primary text-sm font-medium">Read More →</a>
-                                </div>
-                            ))}
-                        </div>
+                        {newsLoading && (
+                            <div className="flex-1 flex items-center justify-center">
+                                <div className="text-sm text-muted-foreground">Loading latest news...</div>
+                            </div>
+                        )}
+                        {newsError && !newsLoading && (
+                            <div className="flex-1 flex items-center justify-center">
+                                <div className="text-sm text-red-600">{newsError}</div>
+                            </div>
+                        )}
+
+
+                        {!newsLoading && !newsError && (
+                            <div className="grid grid-cols-1 gap-3 flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                                {newsData.map((item, idx) => (
+                                    <div key={idx} className="rounded-xl border p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200">
+                                        <div className="text-base font-semibold leading-snug line-clamp-2">
+                                            {item.title}
+                                        </div>
+                                        <div className="mt-1 text-xs text-muted-foreground">
+                                            Newswire.lk · {item.date}
+                                        </div>
+                                        <a
+                                            href={item.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-2 inline-flex items-center text-primary text-sm font-medium hover:underline"
+                                        >
+                                            Read More →
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

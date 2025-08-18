@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   MapPin,
@@ -9,11 +9,16 @@ import {
   Heart,
   Star,
   SlidersHorizontal,
+  Plus,
+  Loader2,
+  XCircle,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -32,146 +37,18 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
+import Link from "next/link";
 
-const coworkingSpaces = [
-  {
-    id: 1,
-    name: "WeWork Downtown",
-    location: "Manhattan, New York",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.8,
-    reviews: 124,
-    pricePerHour: 25,
-    pricePerDay: 180,
-    pricePerWeek: 900,
-    pricePerMonth: 3200,
-    capacity: "1-50 people",
-    type: "Flexible Workspace",
-    amenities: [
-      "High-Speed WiFi",
-      "Meeting Rooms",
-      "Parking",
-      "Coffee Bar",
-      "24/7 Access",
-    ],
-    description:
-      "Premium co-working space in the heart of Manhattan with stunning city views.",
-    featured: true,
-    saved: false,
-  },
-  {
-    id: 2,
-    name: "The Hive Collective",
-    location: "Brooklyn, New York",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.6,
-    reviews: 89,
-    pricePerHour: 18,
-    pricePerDay: 120,
-    pricePerWeek: 600,
-    pricePerMonth: 2100,
-    capacity: "1-30 people",
-    type: "Creative Studio",
-    amenities: ["High-Speed WiFi", "Printing", "Kitchen", "Rooftop Terrace"],
-    description:
-      "Creative co-working space perfect for startups and freelancers.",
-    featured: false,
-    saved: true,
-  },
-  {
-    id: 3,
-    name: "TechHub Central",
-    location: "San Francisco, CA",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.9,
-    reviews: 156,
-    pricePerHour: 30,
-    pricePerDay: 220,
-    pricePerWeek: 1100,
-    pricePerMonth: 4000,
-    capacity: "1-100 people",
-    type: "Tech Workspace",
-    amenities: [
-      "High-Speed WiFi",
-      "Meeting Rooms",
-      "Parking",
-      "Gym",
-      "24/7 Access",
-      "Phone Booths",
-    ],
-    description:
-      "State-of-the-art workspace designed for tech professionals and startups.",
-    featured: true,
-    saved: false,
-  },
-  {
-    id: 4,
-    name: "Green Space Co-work",
-    location: "Austin, Texas",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.7,
-    reviews: 92,
-    pricePerHour: 20,
-    pricePerDay: 140,
-    pricePerWeek: 700,
-    pricePerMonth: 2500,
-    capacity: "1-40 people",
-    type: "Eco-Friendly",
-    amenities: ["High-Speed WiFi", "Garden Area", "Bike Storage", "Coffee Bar"],
-    description:
-      "Sustainable co-working space with a focus on environmental consciousness.",
-    featured: false,
-    saved: false,
-  },
-  {
-    id: 5,
-    name: "Innovation Lab",
-    location: "Seattle, WA",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.5,
-    reviews: 67,
-    pricePerHour: 22,
-    pricePerDay: 160,
-    pricePerWeek: 800,
-    pricePerMonth: 2800,
-    capacity: "1-25 people",
-    type: "Tech Workspace",
-    amenities: [
-      "High-Speed WiFi",
-      "3D Printing",
-      "Workshop Area",
-      "Coffee Bar",
-    ],
-    description:
-      "Modern workspace with cutting-edge technology and maker space facilities.",
-    featured: false,
-    saved: false,
-  },
-  {
-    id: 6,
-    name: "Creative Commons",
-    location: "Los Angeles, CA",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.4,
-    reviews: 78,
-    pricePerHour: 19,
-    pricePerDay: 130,
-    pricePerWeek: 650,
-    pricePerMonth: 2300,
-    capacity: "1-35 people",
-    type: "Creative Studio",
-    amenities: [
-      "High-Speed WiFi",
-      "Art Supplies",
-      "Photography Studio",
-      "Kitchen",
-    ],
-    description:
-      "Inspiring creative workspace for artists, designers, and content creators.",
-    featured: false,
-    saved: false,
-  },
-];
+// Add custom styles for line-clamp
+const lineClampStyle = {
+  display: '-webkit-box',
+  WebkitLineClamp: 1,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis'
+};
+
+const API_BASE_URL = "http://localhost:8080";
 
 const durationOptions = [
   { value: "hourly", label: "Hourly", key: "pricePerHour" },
@@ -197,14 +74,67 @@ const amenityFilters = [
 ];
 
 export default function CoworkingPlacesPage() {
+  const isMobile = useIsMobile();
+  const [places, setPlaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDuration, setSelectedDuration] = useState("daily");
-  const [budgetRange, setBudgetRange] = useState([0, 500]);
+  const [budgetRange, setBudgetRange] = useState([0, 3000000]);
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedAmenities, setSelectedAmenities] = useState([]);
-  const [savedSpaces, setSavedSpaces] = useState([2]);
+  const [savedSpaces, setSavedSpaces] = useState([]);
   const [sortBy, setSortBy] = useState("featured");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Fetch places from API
+  const fetchPlaces = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      console.log("Fetching places from:", `${API_BASE_URL}/api/places`);
+      const response = await fetch(`${API_BASE_URL}/api/places`);
+      const data = await response.json();
+
+      console.log("API Response:", data);
+
+      if (response.ok) {
+        if (data.success && data.data) {
+          console.log("Setting places:", data.data);
+          setPlaces(data.data);
+        } else {
+          setError(data.message || "No places data received");
+        }
+      } else {
+        setError(data.message || "Failed to fetch places");
+      }
+    } catch (err) {
+      setError("Network error: Unable to fetch places");
+      console.error("Error fetching places:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load places on component mount
+  useEffect(() => {
+    fetchPlaces();
+  }, []);
+
+  // Load and persist saved places
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("savedPlaces");
+      if (saved) setSavedSpaces(JSON.parse(saved));
+    } catch { }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("savedPlaces", JSON.stringify(savedSpaces));
+    } catch { }
+  }, [savedSpaces]);
 
   const toggleTypeFilter = (type) => {
     setSelectedTypes((prev) =>
@@ -223,36 +153,52 @@ export default function CoworkingPlacesPage() {
   const clearAllFilters = () => {
     setSelectedTypes([]);
     setSelectedAmenities([]);
-    setBudgetRange([0, 500]);
+    setBudgetRange([0, 3000000]);
   };
 
-  const toggleSaveSpace = (spaceId) => {
+  const toggleSaveSpace = (placeId) => {
     setSavedSpaces((prev) =>
-      prev.includes(spaceId)
-        ? prev.filter((id) => id !== spaceId)
-        : [...prev, spaceId]
+      prev.includes(placeId)
+        ? prev.filter((id) => id !== placeId)
+        : [...prev, placeId]
     );
   };
 
-  const getCurrentPrice = (space) => {
-    const durationKey =
-      durationOptions.find((d) => d.value === selectedDuration)?.key ||
-      "pricePerDay";
-    return space[durationKey];
+  const getCurrentPrice = (place) => {
+    // Use the base price from the API
+    return place.pricing.price;
   };
 
-  const filteredSpaces = coworkingSpaces.filter((space) => {
+  const formatPrice = (place) => {
+    const price = place.pricing.price;
+    const currency = place.pricing.currency;
+    const billing = place.pricing.billing;
+
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(price) + ` per ${billing}`;
+  };
+
+  const filteredPlaces = places.filter((place) => {
     const matchesSearch =
-      space.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      space.location.toLowerCase().includes(searchQuery.toLowerCase());
+      place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      place.location.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesType =
-      selectedTypes.length === 0 || selectedTypes.includes(space.type);
+      selectedTypes.length === 0 ||
+      selectedTypes.some(type => place.workspaceTypes.includes(type));
+
     const matchesAmenities =
       selectedAmenities.length === 0 ||
-      selectedAmenities.every((amenity) => space.amenities.includes(amenity));
+      selectedAmenities.every((amenity) => place.amenities.includes(amenity));
+
+    const currentPrice = getCurrentPrice(place);
     const matchesBudget =
-      getCurrentPrice(space) >= budgetRange[0] &&
-      getCurrentPrice(space) <= budgetRange[1];
+      currentPrice >= budgetRange[0] &&
+      currentPrice <= budgetRange[1];
+
+    console.log(`Place: ${place.name}, Price: ${currentPrice}, Budget Range: ${budgetRange[0]}-${budgetRange[1]}, Matches Budget: ${matchesBudget}`);
 
     return matchesSearch && matchesType && matchesAmenities && matchesBudget;
   });
@@ -260,7 +206,36 @@ export default function CoworkingPlacesPage() {
   const activeFiltersCount =
     selectedTypes.length +
     selectedAmenities.length +
-    (budgetRange[0] > 0 || budgetRange[1] < 500 ? 1 : 0);
+    (budgetRange[0] > 0 || budgetRange[1] < 3000000 ? 1 : 0);
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading places...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <Alert className="border-red-200 bg-red-50 mb-6">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {error}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={fetchPlaces} variant="outline">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -268,12 +243,19 @@ export default function CoworkingPlacesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            Co-working Spaces
+            Find the Perfect Desk, Anywhere You Go
           </h1>
-          <p className="text-gray-600 mt-1">Find your perfect workspace</p>
+          <p className="text-gray-600 mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
         </div>
-        <div className="text-sm text-gray-500">
-          {filteredSpaces.length} spaces available
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-gray-500">
+            {filteredPlaces.length} spaces available
+          </div>
+          <Link href="/workspace/places/create">
+            <Button className="text-white bg-indigo-600 hover:bg-indigo-700">
+              Add New Space
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -318,32 +300,45 @@ export default function CoworkingPlacesPage() {
             </Button>
           </SheetTrigger>
 
-          <SheetContent className="w-[500px] p-0 overflow-y-auto">
-            {" "}
-            <div>
-              <SheetHeader className="py-4 sm:py-6">
-                <SheetTitle className="text-lg sm:text-xl">
-                  Filter Workspaces
-                </SheetTitle>
-                <SheetDescription className="text-sm sm:text-base">
-                  Refine your search to find the perfect co-working space
-                </SheetDescription>
-              </SheetHeader>
+          <SheetContent
+            side="right"
+            className={`
+              ${isMobile
+                ? "max-w-[95%] max-h-[80vh] p-4 rounded-xl"
+                : "max-w-3xl p-6 rounded-xl"
+              }
+              overflow-hidden flex flex-col [&>button]:hidden
+            `}
+          >
+            <div className="absolute right-3 top-3 z-50">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFilterOpen(false)}
+                className="h-8 w-8 rounded-full hover:bg-gray-100"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
             </div>
-            <div className="px-4 sm:px-6 pb-6 space-y-6 sm:space-y-8">
+
+            <SheetHeader className="p-4 pb-2">
+              <SheetTitle className="text-2xl">Filter Workspaces</SheetTitle>
+            </SheetHeader>
+            <div className="px-4 pt-2 pb-4 space-y-6">
               {/* Budget Filter */}
               <div className="space-y-4">
-                <label className="text-sm sm:text-base font-medium text-gray-900 block">
+                <label className="block text-md font-medium text-gray-700">
                   Budget Range: ${budgetRange[0]} - ${budgetRange[1]} per{" "}
                   {selectedDuration.replace("ly", "")}
                 </label>
-                <div className="px-2">
+                <div>
                   <Slider
                     value={budgetRange}
                     onValueChange={setBudgetRange}
-                    max={500}
+                    max={3000000}
                     min={0}
-                    step={10}
+                    step={10000}
                     className="w-full"
                   />
                 </div>
@@ -353,10 +348,10 @@ export default function CoworkingPlacesPage() {
 
               {/* Workspace Type */}
               <div className="space-y-4">
-                <label className="text-sm sm:text-base font-medium text-gray-900 block">
+                <label className="block text-md font-medium text-gray-700">
                   Workspace Type
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {typeFilters.map((type) => (
                     <Button
                       key={type}
@@ -365,7 +360,7 @@ export default function CoworkingPlacesPage() {
                       }
                       size="sm"
                       onClick={() => toggleTypeFilter(type)}
-                      className="justify-start h-10 sm:h-9 text-sm px-3 py-2 w-full"
+                      className="justify-start h-9 text-sm px-3 py-2 w-full"
                     >
                       <span className="truncate">{type}</span>
                     </Button>
@@ -377,10 +372,10 @@ export default function CoworkingPlacesPage() {
 
               {/* Amenities */}
               <div className="space-y-4">
-                <label className="text-sm sm:text-base font-medium text-gray-900 block">
+                <label className="block text-md font-medium text-gray-700">
                   Amenities
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {amenityFilters.map((amenity) => (
                     <Button
                       key={amenity}
@@ -391,7 +386,7 @@ export default function CoworkingPlacesPage() {
                       }
                       size="sm"
                       onClick={() => toggleAmenityFilter(amenity)}
-                      className="justify-start h-10 sm:h-9 text-sm px-3 py-2 w-full"
+                      className="justify-start h-9 text-sm px-3 py-2 w-full"
                     >
                       <span className="truncate">{amenity}</span>
                     </Button>
@@ -405,7 +400,7 @@ export default function CoworkingPlacesPage() {
                   <Button
                     variant="ghost"
                     onClick={clearAllFilters}
-                    className="w-full h-11 text-sm sm:text-base"
+                    className="w-full h-9 text-sm"
                   >
                     <X className="h-4 w-4 mr-2" />
                     Clear All Filters ({activeFiltersCount})
@@ -463,14 +458,14 @@ export default function CoworkingPlacesPage() {
               </button>
             </Badge>
           ))}
-          {(budgetRange[0] > 0 || budgetRange[1] < 500) && (
+          {(budgetRange[0] > 0 || budgetRange[1] < 3000000) && (
             <Badge
               variant="secondary"
               className="bg-purple-100 text-purple-800"
             >
               ${budgetRange[0]}-${budgetRange[1]}
               <button
-                onClick={() => setBudgetRange([0, 500])}
+                onClick={() => setBudgetRange([0, 3000000])}
                 className="ml-1 hover:text-purple-600"
               >
                 <X className="h-3 w-3" />
@@ -481,95 +476,57 @@ export default function CoworkingPlacesPage() {
       )}
 
       {/* Co-working Spaces Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-        {filteredSpaces.map((space) => (
-          <Card key={space.id} className="bg-white border-gray-200">
-            <div className="relative">
-              <Image
-                src={space.image || "/placeholder.svg"}
-                alt={space.name}
-                width={300}
-                height={300}
-                className="w-full h-25 object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleSaveSpace(space.id)}
-                className="absolute top-3 right-3 p-2 bg-white/80 hover:bg-white rounded-full"
-              ></Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredPlaces.map((place) => (
+          <div
+            key={place.placeId}
+            className="cursor-pointer group"
+            onClick={() => {
+              // Navigate to place detail page or handle click
+              console.log('Navigate to place:', place.placeId);
+            }}
+          >
+            <div className="relative rounded-lg overflow-hidden">
+              {place.photoUrls && place.photoUrls.length > 0 ? (
+                <img
+                  src={place.photoUrls[0]}
+                  alt={place.name}
+                  className="w-full h-64 object-cover transition-transform duration-500 hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
+                  <MapPin className="h-8 w-8 text-gray-400" />
+                </div>
+              )}
+
             </div>
 
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {/* Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {space.name}
-                    </h3>
-                    <div className="flex items-center text-sm text-gray-500 mt-1">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {space.location}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-gray-900">
-                      ${getCurrentPrice(space)}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      per {selectedDuration.replace("ly", "")}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Capacity */}
-                <div className="flex items-center text-sm text-gray-600">
-                  <Users className="h-4 w-4 mr-2" />
-                  {space.capacity}
-                </div>
-
-                {/* Amenities */}
-                <div className="flex flex-wrap gap-1">
-                  {space.amenities.slice(0, 2).map((amenity) => (
-                    <Badge
-                      key={amenity}
-                      variant="secondary"
-                      className="text-xs bg-gray-100 text-gray-600 px-2 py-1"
-                    >
-                      {amenity}
-                    </Badge>
-                  ))}
-                  {space.amenities.length > 2 && (
-                    <Badge
-                      variant="secondary"
-                      className="text-xs bg-gray-100 text-gray-600 px-2 py-1"
-                    >
-                      +{space.amenities.length - 2} more
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-2 pt-2">
-                  <Button className="flex-1 bg-gray-900 hover:bg-gray-800 text-white h-9 text-sm">
-                    View Details
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 h-9 text-sm bg-transparent"
-                  >
-                    Book Now
-                  </Button>
+            <div className="pt-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900 truncate">
+                  {place.name}
+                </h3>
+                <div className="flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-current text-yellow-500" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {place.rating || "New"}
+                  </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex items-center text-sm text-gray-600 mb-1">
+                <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                <span className="truncate">{place.location}</span>
+              </div>
+              <p className="text-sm text-gray-600 truncate">
+                {formatPrice(place)} • {place.capacity} people
+              </p>
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Empty State */}
-      {filteredSpaces.length === 0 && (
+      {filteredPlaces.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
             <MapPin className="h-16 w-16 mx-auto" />

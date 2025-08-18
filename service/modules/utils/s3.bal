@@ -65,7 +65,7 @@ isolated function generateCleanFileName(string originalFileName) returns string 
 public isolated function uploadImageToS3(http:Request req) returns ImageUploadResult|error {
     mime:Entity[]|http:ClientError bodyParts = req.getBodyParts();
     if bodyParts is error {
-        return {success: false, message: "Error parsing multipart data"};
+        return {success: false, message: "error passing multipart dataa"};
     }
 
     byte[] imageContent = [];
@@ -82,12 +82,12 @@ public isolated function uploadImageToS3(http:Request req) returns ImageUploadRe
     }
 
     if imageContent.length() == 0 {
-        return {success: false, message: "No image file found"};
+        return {success: false, message: "img file 404"};
     }
 
     string[] parts = re:split(fileName, "\\.");
     if parts.length() < 2 || !imageTypes.hasKey(parts[parts.length() - 1].toLowerAscii()) {
-        return {success: false, message: "Invalid image type. Supported: png, jpg, jpeg, gif, webp"};
+        return {success: false, message: "invalid img type"};
     }
 
     string cleanFileName = generateCleanFileName(fileName);
@@ -95,12 +95,12 @@ public isolated function uploadImageToS3(http:Request req) returns ImageUploadRe
 
     error? uploadResult = s3Client->createObject(bucketName, s3ObjectPath, imageContent);
     if uploadResult is error {
-        return {success: false, message: "Failed to upload image to S3: " + uploadResult.message()};
+        return {success: false, message: "failed to upload s3: " + uploadResult.message()};
     }
 
     return {
         success: true,
-        message: "Image uploaded successfully",
+        message: "image upload success",
         data: {
             filename: cleanFileName,
             s3Path: s3ObjectPath,
@@ -110,24 +110,25 @@ public isolated function uploadImageToS3(http:Request req) returns ImageUploadRe
     };
 }
 
+//img>1
 public isolated function uploadImageFromPart(mime:Entity part) returns ImageUploadResult|error {
     mime:ContentDisposition contentDisposition = part.getContentDisposition();
     string fileName = contentDisposition.fileName is string ? contentDisposition.fileName : "image.jpg";
-    
+
     byte[]|error content = part.getByteArray();
     if content is error {
-        return {success: false, message: "Error reading image content"};
+        return {success: false, message: "error getting img contentn"};
     }
-    
+
     byte[] imageContent = content;
-    
+
     if imageContent.length() == 0 {
-        return {success: false, message: "No image content found"};
+        return {success: false, message: "img content 404"};
     }
 
     string[] parts = re:split(fileName, "\\.");
     if parts.length() < 2 || !imageTypes.hasKey(parts[parts.length() - 1].toLowerAscii()) {
-        return {success: false, message: "Invalid image type. Supported: png, jpg, jpeg, gif, webp"};
+        return {success: false, message: "invalid img type"};
     }
 
     string cleanFileName = generateCleanFileName(fileName);
@@ -135,12 +136,12 @@ public isolated function uploadImageFromPart(mime:Entity part) returns ImageUplo
 
     error? uploadResult = s3Client->createObject(bucketName, s3ObjectPath, imageContent);
     if uploadResult is error {
-        return {success: false, message: "Failed to upload image to S3: " + uploadResult.message()};
+        return {success: false, message: "failed to uplod o s3: " + uploadResult.message()};
     }
 
     return {
         success: true,
-        message: "Image uploaded successfully",
+        message: "img uploaded successfully",
         data: {
             filename: cleanFileName,
             s3Path: s3ObjectPath,

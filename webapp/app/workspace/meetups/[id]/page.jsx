@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:8080";
-const WS_BASE_URL = "ws://localhost:9090/chat";
+const WS_BASE_URL = "ws://localhost:9090";
 
 export default function MeetupDetailsPage({ params: paramsPromise }) {
   const params = React.use(paramsPromise);
@@ -37,6 +37,7 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
   const [isJoined, setIsJoined] = useState(false);
   const [chatConnected, setChatConnected] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -113,6 +114,11 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
 
   // WebSocket connection
   const connectWebSocket = () => {
+    // Prevent multiple connections
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      return;
+    }
+
     try {
       const ws = new WebSocket(`${WS_BASE_URL}/chat`);
       wsRef.current = ws;
@@ -147,7 +153,14 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
               isOrganizer: false,
             };
 
-            setMessages((prev) => [...prev, newMsg]);
+            // Prevent duplicate messages
+            setMessages((prev) => {
+              const messageExists = prev.some(msg => msg.id === newMsg.id);
+              if (messageExists) {
+                return prev;
+              }
+              return [...prev, newMsg];
+            });
           }
         } catch (err) {
           console.error("Error parsing WebSocket message:", err);
@@ -259,10 +272,13 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     if (
       !newMessage.trim() ||
       !wsRef.current ||
-      wsRef.current.readyState !== WebSocket.OPEN
+      wsRef.current.readyState !== WebSocket.OPEN ||
+      isSending
     ) {
       return;
     }
+
+    setIsSending(true);
 
     const messageData = {
       type: "message",
@@ -274,8 +290,14 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
       },
     };
 
-    wsRef.current.send(JSON.stringify(messageData));
-    setNewMessage("");
+    try {
+      wsRef.current.send(JSON.stringify(messageData));
+      setNewMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // Effects
@@ -671,9 +693,13 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
                   <Button
                     type="submit"
                     className="bg-black text-white hover:bg-gray-800 rounded-xl px-4"
-                    disabled={!newMessage.trim() || !chatConnected}
+                    disabled={!newMessage.trim() || !chatConnected || isSending}
                   >
-                    <Send className="w-4 h-4" />
+                    {isSending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </Button>
                 </form>
                 {!chatConnected && (
