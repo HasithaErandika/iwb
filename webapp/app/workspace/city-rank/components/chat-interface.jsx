@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Send, Loader2, Wifi, WifiOff } from "lucide-react"
+import { getAuthHeaders } from "@/lib/api"
 
 const API_BASE_URL = "http://localhost:8080";
 const WS_BASE_URL = "ws://localhost:9090/chat";
@@ -67,7 +68,8 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
         try {
             setLoadingHistory(true);
             const response = await fetch(
-                `${API_BASE_URL}/api/chat/history/city/${cityId}`
+                `${API_BASE_URL}/api/chat/history/city/${cityId}`,
+                { headers: getAuthHeaders(session) }
             );
             const data = await response.json();
 
@@ -260,7 +262,7 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
         <Card className="w-full h-[500px] flex flex-col">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-2">
-                <CardTitle className="text-lg font-semibold text-left">Community Chat</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-left">Community Chat</CardTitle>
                     <div className="flex items-center gap-2">
                         {chatConnected ? (
                             <Wifi className="w-4 h-4 text-green-500" />

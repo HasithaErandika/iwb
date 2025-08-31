@@ -10,6 +10,8 @@ import { MapPin, Star, ArrowLeft, Loader2 } from "lucide-react"
 import CityOverview from "../components/city-overview"
 import ComprehensiveRatingForm from "../components/rating-form"
 import ChatInterface from "../components/chat-interface"
+import { useSession } from "next-auth/react"
+import { getAuthHeaders } from "@/lib/api"
 
 // Cities data - initially empty, will be populated by user additions
 const sriLankanCities = []
@@ -19,11 +21,12 @@ export default function CityDetailPage({ params }) {
     const [activeTab, setActiveTab] = useState("overview")
     const [city, setCity] = useState(null)
     const [loading, setLoading] = useState(true)
+    const { data: session } = useSession()
 
     useEffect(() => {
         const fetchCity = async () => {
             try {
-                const res = await fetch(`http://localhost:8080/api/cities/${params.slug}`, { cache: 'no-store' })
+                const res = await fetch(`http://localhost:8080/api/cities/${params.slug}`, { cache: 'no-store', headers: { ...getAuthHeaders(session) } })
                 const data = await res.json()
                 if (data?.success && data.data) {
                     const c = data.data

@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Loader2, XCircle, Upload, X } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { getAuthHeaders } from "@/lib/api";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -44,6 +46,7 @@ const amenities = [
 
 export default function CreatePlacePage() {
     const router = useRouter();
+    const { data: session } = useSession();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -145,6 +148,7 @@ export default function CreatePlacePage() {
 
             const response = await fetch(`${API_BASE_URL}/api/places`, {
                 method: "POST",
+                headers: getAuthHeaders(session),
                 body: formDataToSend,
             });
 

@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Upload, X } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { getAuthHeaders } from "@/lib/api"
 
 export default function AddCityPage() {
     const router = useRouter()
@@ -22,6 +24,7 @@ export default function AddCityPage() {
         ratings: {},
     })
     const [imageFiles, setImageFiles] = useState([null, null, null, null])
+    const { data: session } = useSession()
 
     const categories = ["Business Hub", "Cultural City", "Beach City", "Mountain Town"]
     const amenityOptions = [
@@ -70,6 +73,7 @@ export default function AddCityPage() {
         try {
             const res = await fetch('http://localhost:8080/api/cities', {
                 method: 'POST',
+                headers: getAuthHeaders(session),
                 body: fd,
             })
             const data = await res.json()

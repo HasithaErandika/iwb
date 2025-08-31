@@ -25,6 +25,7 @@ import {
     IconUsersPlus,
     IconSmartHome,
     IconBuildingBank,
+    IconMapSearch,
     IconLocationPin,
     IconNavigationShare,
     IconSquareRoundedPercentage
@@ -61,6 +62,11 @@ const data = {
             title: "City Rank",
             url: "/workspace/city-rank",
             icon: IconNavigationShare
+        },
+        {
+            title: "Incident Map",
+            url: "/workspace/map",
+            icon: IconMapSearch
         },
         {
             title: "Meetups",

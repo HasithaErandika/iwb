@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { getAuthHeaders } from "@/lib/api"
+import { useSession } from "next-auth/react"
 
 const ratingCategories = [
     { id: "cost", label: "Cost of Living", emoji: "💰", description: "Overall affordability" },
@@ -40,7 +42,7 @@ const ratingLabels = ["Bad", "Okay", "Good", "Great", "Amazing"]
 export default function ComprehensiveRatingForm({ cityName = "Colombo", selectedCity, userId = "guest-user" }) {
     const [ratings, setRatings] = useState({})
     const [review, setReview] = useState("")
-
+    const { data: session } = useSession()
     const displayCityName = selectedCity?.name || cityName
 
     const handleRatingChange = (categoryId, rating) => {
@@ -70,7 +72,7 @@ export default function ComprehensiveRatingForm({ cityName = "Colombo", selected
         try {
             const res = await fetch(`http://localhost:8080/api/cities/${selectedCity.cityId}/ratings`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders(session) },
                 body: JSON.stringify(payload),
             })
             const data = await res.json()

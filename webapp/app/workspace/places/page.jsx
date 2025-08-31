@@ -38,6 +38,8 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import Link from "next/link";
+import { getAuthHeaders } from "@/lib/api"
+import { useSession } from "next-auth/react"
 
 // Add custom styles for line-clamp
 const lineClampStyle = {
@@ -86,6 +88,7 @@ export default function CoworkingPlacesPage() {
   const [savedSpaces, setSavedSpaces] = useState([]);
   const [sortBy, setSortBy] = useState("featured");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const { data: session } = useSession()
 
   // Fetch places from API
   const fetchPlaces = async () => {
@@ -94,7 +97,9 @@ export default function CoworkingPlacesPage() {
       setError("");
 
       console.log("Fetching places from:", `${API_BASE_URL}/api/places`);
-      const response = await fetch(`${API_BASE_URL}/api/places`);
+      const response = await fetch(`${API_BASE_URL}/api/places`, {
+        headers: getAuthHeaders(session)
+      });
       const data = await response.json();
 
       console.log("API Response:", data);
@@ -211,7 +216,11 @@ export default function CoworkingPlacesPage() {
   if (loading) {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-center min-h-96">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Find the Perfect Desk, Anywhere You Go</h1>
+          <p className="text-gray-600 mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
+        </div>
+        <div className="flex items-center justify-center min-h-72">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
             <p className="text-gray-600">Loading places...</p>
@@ -224,6 +233,10 @@ export default function CoworkingPlacesPage() {
   if (error) {
     return (
       <div className="p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Find the Perfect Desk, Anywhere You Go</h1>
+          <p className="text-gray-600 mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
+        </div>
         <Alert className="border-red-200 bg-red-50 mb-6">
           <XCircle className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-red-800">

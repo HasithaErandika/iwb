@@ -12,11 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Upload, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { getAuthHeaders } from "@/lib/api";
 
 const API_BASE_URL = "http://localhost:8080";
 
 export default function CreateMeetupPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -72,7 +75,6 @@ export default function CreateMeetupPage() {
     try {
       const formDataToSend = new FormData();
 
-      // Add all form fields
       Object.keys(formData).forEach(key => {
         if (key === "isPaidEvent" || key === "hasLimitedCapacity" || key === "requireApproval") {
           formDataToSend.append(key, formData[key].toString());
@@ -81,13 +83,13 @@ export default function CreateMeetupPage() {
         }
       });
 
-      // Add image if selected
       if (imageFile) {
         formDataToSend.append("photo", imageFile);
       }
 
       const response = await fetch(`${API_BASE_URL}/api/meetups`, {
         method: "POST",
+        headers: getAuthHeaders(session),
         body: formDataToSend,
       });
 
@@ -112,7 +114,6 @@ export default function CreateMeetupPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
         <div className="mb-8">
           <Link href="/workspace/meetups" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -124,9 +125,7 @@ export default function CreateMeetupPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Form */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Basic Information */}
               <Card>
                 <CardHeader>
                   <CardTitle>Basic Information</CardTitle>
@@ -157,7 +156,6 @@ export default function CreateMeetupPage() {
                 </CardContent>
               </Card>
 
-              {/* Date and Time */}
               <Card>
                 <CardHeader>
                   <CardTitle>Date and Time</CardTitle>
@@ -210,7 +208,6 @@ export default function CreateMeetupPage() {
                 </CardContent>
               </Card>
 
-              {/* Venue Information */}
               <Card>
                 <CardHeader>
                   <CardTitle>Venue Information</CardTitle>
@@ -239,7 +236,6 @@ export default function CreateMeetupPage() {
                 </CardContent>
               </Card>
 
-              {/* Pricing and Capacity */}
               <Card>
                 <CardHeader>
                   <CardTitle>Pricing and Capacity</CardTitle>
@@ -310,9 +306,7 @@ export default function CreateMeetupPage() {
               </Card>
             </div>
 
-            {/* Sidebar */}
             <div className="space-y-6">
-              {/* Image Upload */}
               <Card>
                 <CardHeader>
                   <CardTitle>Event Image</CardTitle>
@@ -353,7 +347,6 @@ export default function CreateMeetupPage() {
                 </CardContent>
               </Card>
 
-              {/* Submit Button */}
               <Card>
                 <CardContent className="pt-6">
                   <Button
@@ -376,7 +369,6 @@ export default function CreateMeetupPage() {
           </div>
         </form>
 
-        {/* Error/Success Messages */}
         {error && (
           <Alert className="mt-6 border-red-200 bg-red-50">
             <XCircle className="h-4 w-4 text-red-600" />

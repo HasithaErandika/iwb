@@ -6,19 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, MapPin, Star, MessageCircle } from "lucide-react"
+import { Loader2, Star } from "lucide-react"
 import AIChatInterface from "./components/ai-chat-interface"
+import { useSession } from "next-auth/react"
+import { getAuthHeaders } from "@/lib/api"
 
 export default function CityRankPage() {
     const router = useRouter()
+    const { data: session } = useSession()
     const [cities, setCities] = useState([])
     const [loading, setLoading] = useState(true)
 
-    // Load cities from backend API
     useEffect(() => {
         const fetchCities = async () => {
             try {
-                const res = await fetch('http://localhost:8080/api/cities', { cache: 'no-store' })
+                const res = await fetch('http://localhost:8080/api/cities', { cache: 'no-store', headers: { ...getAuthHeaders(session) } })
                 const data = await res.json()
                 if (data?.success && Array.isArray(data.data)) {
                     const mapped = data.data.map((c) => ({
@@ -62,16 +64,13 @@ export default function CityRankPage() {
     return (
         <div className="min-h-screen bg-background">
             <div className="container mx-auto px-8 py-6">
-                {/* Header Section */}
                 <div className="mb-8 text-left">
                     <h1 className="text-3xl font-semibold tracking-tight text-black">Where Should You Be in Sri Lanka? 🤔</h1>
                     <p className="text-gray-600 mt-1">Discover cities through community rankings, ratings, and hidden stories..</p>
 
                 </div>
 
-                {/* Cities Grid Section */}
                 <div className="space-y-6">
-                    {/* Action Bar */}
                     <div className="flex justify-start">
                         <Button
                             onClick={() => router.push("/workspace/city-rank/add-city")}
@@ -81,7 +80,6 @@ export default function CityRankPage() {
                         </Button>
                     </div>
 
-                    {/* Cities Grid */}
                     {cities.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {cities.map((city, index) => (
@@ -116,25 +114,18 @@ export default function CityRankPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-16">
-                            <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">No cities yet</h3>
-                            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                                Start building your city database by adding the first city. Share your experiences and help others discover amazing places.
-                            </p>
-                            <Button
-                                onClick={() => router.push("/workspace/city-rank/add-city")}
-                                className="bg-primary text-primary-foreground px-6 py-3"
-                            >
-                                <MapPin className="h-4 w-4 mr-2" />
-                                Add Your First City
-                            </Button>
+                        <div className="py-16">
+                            <div className="max-w-xl mx-auto rounded-lg border border-gray-200 bg-white/70 backdrop-blur-sm p-5 sm:p-6">
+                                <div className="text-base sm:text-lg font-semibold text-gray-900">No cities yet</div>
+                                <p className="mt-1 text-sm sm:text-base text-gray-600">
+                                    Start building your city database by adding the first city. Share your experiences and help others discover amazing places.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* AI Chat Interface */}
             <AIChatInterface />
         </div>
     )

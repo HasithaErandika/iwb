@@ -26,6 +26,8 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getAuthHeaders } from "@/lib/api"
+import { useSession } from "next-auth/react"
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -40,18 +42,17 @@ export default function EventsListing() {
   const [dateFilter, setDateFilter] = useState("all");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [savedIds, setSavedIds] = useState([]);
+  const { data: session } = useSession()
 
-  // Fetch meetups from API
   const fetchMeetups = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/api/meetups`);
+      const response = await fetch(`${API_BASE_URL}/api/meetups`, { headers: getAuthHeaders(session) });
       const data = await response.json();
 
       if (response.ok) {
-        // Handle the API response structure: {success: true, message: "", data: [...]}
         if (data.success && data.data) {
           setEvents(data.data);
         } else {
@@ -68,12 +69,10 @@ export default function EventsListing() {
     }
   };
 
-  // Load meetups on component mount
   useEffect(() => {
     fetchMeetups();
   }, []);
 
-  // Load and persist saved meetups
   useEffect(() => {
     try {
       const saved = localStorage.getItem("savedMeetups");
@@ -87,13 +86,11 @@ export default function EventsListing() {
     } catch { }
   }, [savedIds]);
 
-  // Extract unique cities and create categories from event data
   const cities = Array.from(
     new Set(events.map((event) => event.venueName).filter(Boolean))
   );
   const categories = ["Workshop", "Networking", "Social", "Tech", "Business"]; // Common meetup categories
 
-  // Format date and time
   const formatDateTime = (date, time) => {
     try {
       const datetime = new Date(`${date}T${time}`);
@@ -114,7 +111,6 @@ export default function EventsListing() {
     }
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -122,7 +118,6 @@ export default function EventsListing() {
     }).format(amount);
   };
 
-  // Filter events based on selections
   const debouncedSearch = useDebouncedValue(searchTerm, 200);
 
   const filteredEvents = useMemo(() => events.filter((event) => {
@@ -130,7 +125,6 @@ export default function EventsListing() {
       selectedCity === "all" || event.venueName === selectedCity;
     const categoryMatch = selectedCategory === "all";
 
-    // Search filter
     const searchMatch =
       debouncedSearch === "" ||
       event.eventName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -140,7 +134,6 @@ export default function EventsListing() {
           .toLowerCase()
           .includes(debouncedSearch.toLowerCase()));
 
-    // Date filter
     const eventDate = new Date(event.eventStartDate);
     const today = new Date();
     const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -156,7 +149,6 @@ export default function EventsListing() {
     return cityMatch && categoryMatch && searchMatch && dateMatch;
   }), [events, selectedCity, selectedCategory, debouncedSearch, dateFilter]);
 
-  // Format date for display
   const formatDisplayDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -171,7 +163,11 @@ export default function EventsListing() {
     return (
       <div className="min-h-screen bg-white">
         <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-96">
+          <div className="mb-6">
+            <h1 className="text-3xl font-semibold tracking-tight text-black">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
+            <p className="text-gray-600 mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
+          </div>
+          <div className="flex items-center justify-center min-h-72">
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
               <p className="text-gray-600">Loading meetups...</p>
@@ -186,6 +182,10 @@ export default function EventsListing() {
     return (
       <div className="min-h-screen bg-white">
         <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="mb-6">
+            <h1 className="text-3xl font-semibold tracking-tight text-black">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
+            <p className="text-gray-600 mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
+          </div>
           <Alert className="border-red-200 bg-red-50 mb-6">
             <XCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
@@ -205,8 +205,8 @@ export default function EventsListing() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-black">Discover meetups near you</h1>
-            <p className="text-gray-600 mt-1">Find events hosted by people in your community.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-black">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
+            <p className="text-gray-600 mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
           </div>
           <Link href="/workspace/meetups/create">
             <Button className="bg-indigo-500 text-white hover:bg-indigo-600">
@@ -216,7 +216,6 @@ export default function EventsListing() {
           </Link>
         </div>
 
-        {/* Search + Filters trigger */}
         <div className="mb-6 flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -371,7 +370,6 @@ export default function EventsListing() {
   );
 }
 
-// Small debounced value hook to keep typing smooth and avoid excessive filtering
 function useDebouncedValue(value, delayMs) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {

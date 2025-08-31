@@ -9,11 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Cloud, MapPin, ArrowLeftRight } from "lucide-react";
 
 import { fetchLatestNews, fetchWeather, fetchCurrencyConversion } from "@/lib/tools";
-
+import { useSession } from "next-auth/react";
 
 
 export function WorkspaceWidgets() {
     const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const { data: session } = useSession();
+    console.log("Session:", session);
+    console.log("Access token:", session?.access_token);
     const [fromTimeZone, setFromTimeZone] = useState(browserTimeZone);
     const [toTimeZone, setToTimeZone] = useState("UTC");
     const [now, setNow] = useState(new Date());
@@ -140,7 +143,7 @@ export function WorkspaceWidgets() {
         try {
             setCurrencyLoading(true);
             setCurrencyError(null);
-            const result = await fetchCurrencyConversion(parseFloat(amount), base, target);
+            const result = await fetchCurrencyConversion(parseFloat(amount), base, target, session);
 
             if (result.success && result.data) {
                 setCurrencyData(result.data);
@@ -182,7 +185,7 @@ export function WorkspaceWidgets() {
                 try {
                     setWeatherLoading(true);
                     setWeatherError(null);
-                    const weather = await fetchWeather();
+                    const weather = await fetchWeather(session);
                     setWeatherData(weather);
                 } catch (error) {
                     console.error('Failed to fetch weather:', error);

@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getAuthHeaders } from "@/lib/api"
+import { useSession } from "next-auth/react"
 
 export default function AIChatInterface() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -20,6 +22,7 @@ export default function AIChatInterface() {
     const [chatResponse, setChatResponse] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [followUpQuery, setFollowUpQuery] = useState("");
+    const { data: session } = useSession()
 
     const handleSearch = async () => {
         if (!searchQuery.trim()) return;
@@ -33,6 +36,7 @@ export default function AIChatInterface() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    ...getAuthHeaders(session)
                 },
                 body: JSON.stringify({
                     message: searchQuery.trim(),
@@ -79,6 +83,7 @@ In the meantime, here are some general travel tips:
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    ...getAuthHeaders(session)
                 },
                 body: JSON.stringify({
                     message: currentFollowUp,

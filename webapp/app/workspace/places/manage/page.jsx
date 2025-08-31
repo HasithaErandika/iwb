@@ -25,11 +25,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Search, Trash2, Edit, Eye, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
+import { getAuthHeaders } from "@/lib/api"
+import { useSession } from "next-auth/react"
 
 const API_BASE_URL = "http://localhost:8080";
 
 export default function ManagePlacesPage() {
     const router = useRouter();
+    const { data: session } = useSession()
     const [places, setPlaces] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -44,7 +47,9 @@ export default function ManagePlacesPage() {
             setLoading(true);
             setError("");
 
-            const response = await fetch(`${API_BASE_URL}/api/places`);
+            const response = await fetch(`${API_BASE_URL}/api/places`, {
+                headers: getAuthHeaders(session)
+            });
             const data = await response.json();
 
             if (response.ok) {
@@ -77,6 +82,7 @@ export default function ManagePlacesPage() {
             setDeleting(true);
             const response = await fetch(`${API_BASE_URL}/api/places/${placeToDelete.placeId}`, {
                 method: "DELETE",
+                headers: getAuthHeaders(session)
             });
 
             const data = await response.json();

@@ -1,5 +1,3 @@
-// meetups/[id]
-
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -21,6 +19,7 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
+import { getAuthHeaders } from "@/lib/api"
 
 const API_BASE_URL = "http://localhost:8080";
 const WS_BASE_URL = "ws://localhost:9090";
@@ -44,7 +43,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
-  // Get user info for chat
   const currentUser = {
     id: session?.user?.email || "guest-" + Math.random().toString(36).substr(2, 9),
     name:
@@ -59,13 +57,12 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
               : "Guest User"),
   };
 
-  // Fetch meetup details from API
   const fetchMeetupDetails = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/api/meetups/${params.id}`);
+      const response = await fetch(`${API_BASE_URL}/api/meetups/${params.id}`, { headers: getAuthHeaders(session) });
       const data = await response.json();
 
       if (response.ok) {
@@ -85,12 +82,12 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     }
   };
 
-  // Load chat history
   const loadChatHistory = async () => {
     try {
       setLoadingHistory(true);
       const response = await fetch(
-        `${API_BASE_URL}/api/chat/history/${params.id}`
+        `${API_BASE_URL}/api/chat/history/${params.id}`,
+        { headers: getAuthHeaders(session) }
       );
       const data = await response.json();
 
@@ -101,7 +98,7 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
           userId: msg.userId,
           message: msg.message,
           timestamp: formatTimestamp(msg.timestamp),
-          isOrganizer: false, // You can add organizer logic here
+          isOrganizer: false,
         }));
         setMessages(formattedMessages);
       }
@@ -112,9 +109,7 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     }
   };
 
-  // WebSocket connection
   const connectWebSocket = () => {
-    // Prevent multiple connections
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       return;
     }
@@ -127,7 +122,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
         console.log("WebSocket connected");
         setChatConnected(true);
 
-        // Join the meetup room
         const joinMessage = {
           type: "join",
           data: {
@@ -153,7 +147,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
               isOrganizer: false,
             };
 
-            // Prevent duplicate messages
             setMessages((prev) => {
               const messageExists = prev.some(msg => msg.id === newMsg.id);
               if (messageExists) {
@@ -171,7 +164,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
         console.log("WebSocket disconnected");
         setChatConnected(false);
 
-        // Attempt to reconnect after 3 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
           connectWebSocket();
         }, 3000);
@@ -187,13 +179,11 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     }
   };
 
-  // Format timestamp
   const formatTimestamp = (timestamp) => {
     try {
       console.log("Raw timestamp:", timestamp);
       let date;
       if (Array.isArray(timestamp) && timestamp.length > 0) {
-        // Convert [seconds, nanos] to milliseconds
         date = new Date(timestamp[0] * 1000 + Math.floor((timestamp[1] || 0) / 1e6));
       } else {
         date = new Date(timestamp);
@@ -211,7 +201,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     }
   };
 
-  // Format date and time
   const formatDateTime = (date, time) => {
     try {
       const datetime = new Date(`${date}T${time}`);
@@ -232,7 +221,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     }
   };
 
-  // Format date for display
   const formatDisplayDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -243,7 +231,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     });
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -251,7 +238,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     }).format(amount);
   };
 
-  // Calculate estimated attendees
   const getEstimatedAttendees = (event) => {
     if (event.hasLimitedCapacity && event.eventCapacity) {
       return Math.floor(event.eventCapacity * (0.6 + Math.random() * 0.2));
@@ -300,7 +286,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     }
   };
 
-  // Effects
   useEffect(() => {
     fetchMeetupDetails();
   }, [params.id]);
@@ -374,12 +359,12 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
   const { time } = formatDateTime(meetup.eventStartDate, meetup.eventStartTime);
   const estimatedAttendees = getEstimatedAttendees(meetup);
 
-  // Vercel-style gradient avatar helpers
+  // vercel style gradient avatar
   function hashCode(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       hash = str.charCodeAt(i) + ((hash << 5) - hash);
-      hash = hash & hash; // Convert to 32bit integer
+      hash = hash & hash;
     }
     return hash;
   }
@@ -409,7 +394,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-100px)]">
-          {/* Left Panel - Meetup Details */}
           <div
             className="lg:col-span-2 overflow-y-auto custom-scrollbar"
             style={{
@@ -433,7 +417,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
                 background: #9ca3af;
               }
             `}</style>
-            {/* Hero Section */}
             <div className="relative mb-8">
               <div className="relative overflow-hidden rounded-2xl">
                 <img
@@ -515,7 +498,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
                 </div>
               </div>
 
-              {/* Additional Event Info */}
               <div className="flex flex-wrap gap-3 mb-6">
                 {meetup.isPaidEvent && (
                   <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl">
@@ -545,7 +527,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
               </Button>
             </div>
 
-            {/* Organizer */}
             <div className="bg-white rounded-2xl p-8 mb-6 border border-gray-100">
               <h2 className="text-xl font-bold text-black mb-6">Organizer</h2>
               <div className="flex items-center gap-4">
@@ -566,7 +547,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
               </div>
             </div>
 
-            {/* Description */}
             <div className="bg-white rounded-2xl p-8 border border-gray-100">
               <h2 className="text-xl font-bold text-black mb-6">
                 About this meetup
@@ -580,7 +560,6 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
             </div>
           </div>
 
-          {/* Right Panel - Chat */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-gray-100 h-full flex flex-col">
               {/* Chat Header */}

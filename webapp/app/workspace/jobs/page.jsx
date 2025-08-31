@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { getAuthHeaders } from "@/lib/api"
+import { useSession } from "next-auth/react"
 
 const filters = [
   {
@@ -55,20 +57,6 @@ const filters = [
   },
 ]
 
-// Loading skeleton component
-const JobCardSkeleton = () => (
-  <Card className="bg-white border border-gray-200">
-    <CardContent className="px-4 py-3">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 space-y-2">
-          <div className="h-5 bg-gray-200 rounded animate-pulse w-3/4" />
-          <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
-        </div>
-        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse ml-4" />
-      </div>
-    </CardContent>
-  </Card>
-)
 
 export default function JobListingsPage() {
   const isMobile = useIsMobile()
@@ -86,15 +74,14 @@ export default function JobListingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isOpen, setIsOpen] = useState(false)
+  const { data: session } = useSession()
 
-  // Fetch jobs from API
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        // Build query parameters
         const params = new URLSearchParams()
         if (activeFilters.positionType && activeFilters.positionType !== "all")
           params.append("positionType", activeFilters.positionType)
@@ -106,7 +93,7 @@ export default function JobListingsPage() {
         const queryString = params.toString()
         const url = `http://localhost:8080/api/jobs${queryString ? `?${queryString}` : ""}`
 
-        const response = await fetch(url)
+        const response = await fetch(url, { headers: getAuthHeaders(session) })
         if (!response.ok) {
           throw new Error(`Failed to fetch jobs (${response.status})`)
         }
@@ -120,7 +107,7 @@ export default function JobListingsPage() {
     }
 
     fetchJobs()
-  }, [activeFilters])
+  }, [activeFilters, session])
 
   const updateFilter = (filterId, value) => {
     setActiveFilters((prev) => ({
@@ -150,20 +137,16 @@ export default function JobListingsPage() {
   const retryFetch = () => {
     setError(null)
     setLoading(true)
-    // Trigger useEffect by updating a dependency
     setActiveFilters((prev) => ({ ...prev }))
   }
 
-  // Filter jobs based on search query and client-side filters
   const filteredJobs = jobs.filter((job) => {
-    // Text search filter
     const matchesSearch =
       !searchQuery ||
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.description.toLowerCase().includes(searchQuery.toLowerCase())
 
-    // Remote filter (client-side since API doesn't support it)
     const matchesRemote =
       !activeFilters.remote ||
       activeFilters.remote === "all" ||
@@ -176,7 +159,6 @@ export default function JobListingsPage() {
     return matchesSearch && matchesRemote
   })
 
-  // Normalize location display to use semicolons and consistent spacing
   const formatLocation = (loc) => {
     if (!loc) return "";
     return loc
@@ -186,7 +168,6 @@ export default function JobListingsPage() {
       .join("; ");
   }
 
-  // Format date
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString)
@@ -207,13 +188,20 @@ export default function JobListingsPage() {
     }
   }
 
-  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-black">Loading remote jobs...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-[1100px] mx-auto px-2 py-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
+            <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
+          </div>
+          <div className="flex items-center justify-center py-16">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-black">Loading remote jobs...</p>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -221,8 +209,12 @@ export default function JobListingsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-[1100px] mx-auto px-2 py-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
+            <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
+          </div>
           <Alert className="border-red-200 bg-red-50 mb-6">
             <XCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
@@ -245,7 +237,6 @@ export default function JobListingsPage() {
           <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
         </div>
 
-        {/* Search + Filter trigger */}
         <div className="mb-6 flex items-center gap-3">
           <div className="relative flex-1 max-w-lg">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -350,7 +341,6 @@ export default function JobListingsPage() {
             >
               <CardContent className="px-5 py-1">
                 <div className="flex items-center justify-between">
-                  {/* Job info */}
                   <div className="flex-1 min-w-0 pr-4">
                     <h3 className="text-xl leading-6 font-medium text-slate-900 mb-1 truncate">{job.title}</h3>
                     <p className="text-lg leading-5 text-slate-600 truncate">{formatLocation(job.location)}</p>
@@ -366,7 +356,6 @@ export default function JobListingsPage() {
           ))}
         </div>
 
-        {/* Empty state */}
         {filteredJobs.length === 0 && !loading && (
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

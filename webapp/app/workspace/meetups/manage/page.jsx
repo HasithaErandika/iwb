@@ -25,11 +25,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Search, Trash2, Edit, Eye, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { getAuthHeaders } from "@/lib/api";
 
 const API_BASE_URL = "http://localhost:8080";
 
 export default function ManageMeetupsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [meetups, setMeetups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,7 +47,7 @@ export default function ManageMeetupsPage() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/api/meetups`);
+      const response = await fetch(`${API_BASE_URL}/api/meetups`, { headers: getAuthHeaders(session) });
       const data = await response.json();
 
       if (response.ok) {
@@ -77,6 +80,7 @@ export default function ManageMeetupsPage() {
       setDeleting(true);
       const response = await fetch(`${API_BASE_URL}/api/meetups/${meetupToDelete.eventId}`, {
         method: "DELETE",
+        headers: { ...getAuthHeaders(session) }
       });
 
       const data = await response.json();
