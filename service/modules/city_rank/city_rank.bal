@@ -8,7 +8,6 @@ import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
 
-// Main API functions
 public isolated function getAllCities() returns CityListResponse|error {
     CityRecord[]|sql:Error dbResult = getAllCitiesFromDb();
     if dbResult is sql:Error {
@@ -30,7 +29,6 @@ public isolated function getCityBySlug(string slug) returns CityResponse|error {
         return {success: false, message: "City not found"};
     }
 
-    // Get rating breakdown
     CityRatingAverages|sql:Error ratingsResult = getCityRatingAverages(cityResult.city_id);
     CityRatingBreakdown? ratingsBreakdown = ();
     if ratingsResult is CityRatingAverages {
@@ -63,8 +61,8 @@ public isolated function createCity(http:Request req) returns CityCreationResult
         mime:ContentDisposition contentDisposition = part.getContentDisposition();
         string partName = contentDisposition.name;
 
+        // upload imgs one by one
         if partName.startsWith("image") && imageUrls.length() < 4 {
-            // Handle individual image upload (image1, image2, image3, image4)
             utils:ImageUploadResult|error uploadResult = utils:uploadImageFromPart(part);
             if uploadResult is utils:ImageUploadResult && uploadResult.success {
                 utils:ImageData? imageData = uploadResult?.data;
@@ -86,7 +84,6 @@ public isolated function createCity(http:Request req) returns CityCreationResult
         }
     }
 
-    // Validate required fields
     string[] requiredFields = ["name", "province", "description", "category", "latitude", "longitude"];
     foreach string reqField in requiredFields {
         if !formData.hasKey(reqField) || formData[reqField] == "" {
@@ -104,11 +101,9 @@ public isolated function createCity(http:Request req) returns CityCreationResult
         return {success: false, message: "Invalid longitude format"};
     }
 
-    // Generate slug from city name
     string slug = generateSlug(formData.get("name"));
     string cityId = uuid:createType1AsString();
 
-    // Validate amenities JSON
     string amenitiesStr = formData["amenities"] ?: "[]";
     json|error amenitiesJson = amenitiesStr.fromJsonString();
     if amenitiesJson is error {
@@ -143,7 +138,6 @@ public isolated function createCity(http:Request req) returns CityCreationResult
 }
 
 public isolated function submitCityRating(string cityId, CityRatingRequest ratingRequest) returns CityRatingResponse|error {
-    // Validate rating values (1-5)
     RatingData ratings = ratingRequest.ratings;
     int[] ratingValues = [
         ratings.costOfLiving,
@@ -162,7 +156,6 @@ public isolated function submitCityRating(string cityId, CityRatingRequest ratin
         }
     }
 
-    // Check if city exists
     CityRecord|sql:Error cityResult = getCityByIdFromDb(cityId);
     if cityResult is sql:Error {
         return {success: false, message: "City not found"};
@@ -190,7 +183,6 @@ public isolated function submitCityRating(string cityId, CityRatingRequest ratin
         return {success: false, message: "Failed to save rating: " + ratingResult.message()};
     }
 
-    // Update city's overall rating and total ratings count
     error? updateResult = updateCityOverallRating(cityId);
     if updateResult is error {
         io:println("Warning: Failed to update city overall rating: " + updateResult.message());
@@ -250,7 +242,7 @@ public isolated function postCityChat(string cityId, CityChatRequest chatRequest
     return {success: true, message: "Message sent successfully"};
 }
 
-// Helper functions
+// helpers
 isolated function generateSlug(string name) returns string {
     string lowercaseName = name.toLowerAscii();
     string slug = regex:replaceAll(lowercaseName, "[^a-z0-9]", "-");
@@ -315,7 +307,8 @@ isolated function mapCityRecordToCity(CityRecord cityRecord, CityRatingBreakdown
     };
 }
 
-// Database functions
+// db queries
+
 isolated function getAllCitiesFromDb() returns CityRecord[]|sql:Error {
     sql:ParameterizedQuery selectQuery = `
         SELECT city_id, name, slug, province, description, category, latitude, longitude,
@@ -411,7 +404,6 @@ isolated function getCityRatingAverages(string cityId) returns CityRatingAverage
 }
 
 isolated function updateCityOverallRating(string cityId) returns error? {
-    // Calculate overall rating and update the city record
     sql:ParameterizedQuery calculateQuery = `
         UPDATE cities 
         SET 

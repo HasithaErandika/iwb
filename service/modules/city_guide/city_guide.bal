@@ -64,7 +64,6 @@ public isolated function askAnything(string userMessage) returns CityGuideRespon
         };
     }
 
-    // Extract the message content from the first choice
     json firstChoice = choicesArray[0];
     json|error messageJson = firstChoice.message;
     if messageJson is error {

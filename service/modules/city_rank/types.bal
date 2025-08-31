@@ -1,4 +1,3 @@
-// City data types
 public type City record {|
     string cityId;
     string name;

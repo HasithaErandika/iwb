@@ -1,6 +1,7 @@
 import 'service.chat;
 import 'service.city_guide;
 import 'service.city_rank;
+import 'service.incident_map;
 import 'service.jobs;
 import 'service.meetups;
 import 'service.places;
@@ -12,15 +13,31 @@ import ballerina/log;
 
 configurable int port = 8080;
 
+// cors and jwt validation
 @http:ServiceConfig {
     cors: {
         allowOrigins: ["http://localhost:3000"],
         allowCredentials: false,
         allowHeaders: ["CORELATION_ID", "Content-Type", "Authorization"],
         allowMethods: ["GET", "POST", "PUT", "DELETE"]
-    }
+    },
+    auth: [
+        {
+            jwtValidatorConfig: {
+                issuer: "https://api.asgardeo.io/t/s3n4/oauth2/token",
+                audience: ["0fnjPx9nXjkZunwwJ4NKdVwTK9wa"],
+                signatureConfig: {
+                    jwksConfig: {
+                        url: "https://api.asgardeo.io/t/s3n4/oauth2/jwks"
+                    }
+                }
+            }
+        }
+    ]
 }
 service / on new http:Listener(port) {
+
+    // remote jobs
     isolated resource function get api/jobs(string? positionType = (), int? minSalary = (), int? maxSalary = (), string? category = ())
             returns jobs:Job[]|http:BadRequest|http:InternalServerError {
 
@@ -47,6 +64,7 @@ service / on new http:Listener(port) {
         return jobsResult is error ? <http:InternalServerError>{body: {message: "Failed to fetch jobs", details: jobsResult.message()}} : jobsResult;
     }
 
+    // meetups
     isolated resource function get api/meetups() returns json|http:InternalServerError {
         meetups:MeetupListResponse|error result = meetups:getAllMeetups();
         if result is error {
@@ -97,6 +115,7 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
+    // chat ( plex)
     isolated resource function post api/chat(@http:Payload city_guide:UserChatRequest chatRequest)
     returns json|http:BadRequest|http:InternalServerError {
 
@@ -302,6 +321,8 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
+    // city rank
+
     isolated resource function get api/cities() returns json|http:InternalServerError {
         city_rank:CityListResponse|error result = city_rank:getAllCities();
         if result is error {
@@ -435,9 +456,65 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
+    // incidents
+
+    resource function post api/incidents(@http:Payload incident_map:IncidentCreateRequest incidentRequest)
+    returns json|http:BadRequest|http:InternalServerError {
+
+        if incidentRequest.userId.trim() == "" || incidentRequest.'type.trim() == "" ||
+            incidentRequest.description.trim() == "" {
+            return <http:BadRequest>
+            {
+                body: {success: false, message: "User ID, type, and description are required"}
+            };
+        }
+
+        incident_map:IncidentResponse|error result = incident_map:createIncident(incidentRequest);
+        if result is error {
+            return <http:InternalServerError>
+            {
+                body: {success: false, message: "Error creating incident: " + result.message()}
+            };
+        }
+
+        return result.toJson();
+    }
+
+    isolated resource function get api/incidents() returns json|http:InternalServerError {
+        incident_map:IncidentListResponse|error result = incident_map:getAllIncidents();
+        if result is error {
+            return <http:InternalServerError>
+            {
+                body: {success: false, message: "Error fetching incidents: " + result.message()}
+            };
+        }
+        return result.toJson();
+    }
+
+    isolated resource function get api/incidents/[string incidentId]() returns json|http:NotFound|http:InternalServerError {
+        incident_map:IncidentResponse|error result = incident_map:getIncidentById(incidentId);
+        if result is error {
+            return <http:InternalServerError>
+            {
+                body: {success: false, message: "Error fetching incident: " + result.message()}
+            };
+        }
+
+        if !result.success {
+            return <http:NotFound>
+            {
+                body: {success: false, message: result.message}
+            };
+        }
+
+        return result.toJson();
+    }
+
 }
 
 public function main() returns error? {
     log:printInfo("Event Management Service started on port " + port.toString());
     log:printInfo("WebSocket Chat Service started on port 9090");
+    log:printInfo("WebSocket Incident Service started on port 9091");
+
 }
