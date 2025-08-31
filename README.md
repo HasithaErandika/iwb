@@ -1,57 +1,96 @@
-# NomadPage - iwb25-075-octopipers
+## NomadPage
 
-NomadPage is a website that helps people who work remotely and travel to Sri Lanka. It helps them find online jobs, places to work, and meet other people. It also has useful tools like currency conversion. This was built for the Innovate with Ballerina 25 competition to help digital nomads work and live easily in Sri Lanka.
+NomadPage is a platform designed to support digital nomads who plan to live and work from Sri Lanka. Our goal is to create a centralized hub for all the resources nomads need. This project was developed for the Innovate with Ballerina 2025 competition.
 
 ## Tech Stack
 
-**Frontend:** Next.js 15, Tailwind CSS, Shadcn/ui
+**Frontend:** Next.js 15, Tailwind CSS, Shadcn/ui  
+**Backend:** Ballerina, PostgreSQL, AWS S3  
+**Additional Services:** Flask, BeautifulSoup4 (for news scraping)  
 
-**Backend:** Ballerina, PostgreSQL, AWS S3
-
-**Additional Services:** Flask, BeautifulSoup4 (for news scraping functionality)
 
 ## Prerequisites
 
-Before you start, make sure you have these installed on your computer:
+Before you start, make sure you have installed:
 
-- **Node.js v20+ and npm** 
-- **Ballerina** 
-- **Python** 
-- **PostgreSQL**
-- **Asgardeo Account**
-- **AWS Account(to get access to S3)**
+- [Node.js v20+ and npm](https://nodejs.org/)  
+- [Ballerina](https://ballerina.io/downloads/)  
+- [Python](https://www.python.org/downloads/)  
+- [PostgreSQL](https://www.postgresql.org/) (or [Supabase](https://supabase.com/) for easier setup)  
+- [Asgardeo Account](https://wso2.com/asgardeo/) (for authentication)  
+- [AWS Account](https://aws.amazon.com/) (for S3 file storage)  
 
-## Installation and Setup
 
-### 1. Clone the repository
+## Setup Process
+
+### 1. Clone the forked repository
 
 ```bash
-git clone https://github.com/chamals3n4/iwb25-075-octopipers.git
+git clone https://github.com/{username}/iwb25-075-octopipers.git
 cd iwb25-075-octopipers
 ```
 
-### 2. Set Up the Frontend (Next.js)
+### 2. Backend Setup (Ballerina Service)
 
+#### 2.1 Configure PostgreSQL
+1. Create a new PostgreSQL database (or Supabase project).
+2. Run the schema file to create tables:
+
+```sql
+service/resources/schema.sql
+```
+
+#### 2.2 Configure External Services
+* **AWS S3** → Create a bucket, IAM user, and note down credentials.
+* **Perplexity API** → Get your API key from perplexity.ai.
+* **OpenWeather API** → Get your API key from openweathermap.org.
+
+#### 2.3 Create `Config.toml`
+In the `service/` root directory:
+
+```toml
+[service.utils]
+dbHost = "database-host"
+dbUser = "database-username"
+dbPassword = "database-password"
+dbPort = 5432
+dbName = "database-name"
+accessKeyId = "aws-access-key"
+secretAccessKey = "aws-secret-key"
+region = "aws-region"
+bucketName = "s3-bucket-name"
+
+[service.city_guide]
+perplexityApiKey = "perplexity-api-key"
+
+[service.tools]
+openWeatherApi = "openweathermap-api-key"
+```
+
+#### 2.4 Run Backend
+```bash
+cd service
+bal run
+```
+
+Backend available at: `http://localhost:8080`
+
+### 3. Frontend Setup (Next.js)
+
+#### 3.1 Install Dependencies
 ```bash
 cd webapp
 npm install
 ```
 
-#### Set Up Asgardeo Authentication
-
-We use WSO2 Asgardeo for authentication. Follow these steps:
-
-1. Go to [console.asgardeo.io](https://console.asgardeo.io) and sign in
-2. Create a new Next.js application
-3. Get the following values from your Asgardeo app:
-   - Client ID
-   - Client Secret
-   - Organization Name
-   - Application Name
-
-For detailed instructions, refer to the [official Asgardeo documentation](https://wso2.com/asgardeo/docs/).
-
-Create a file called `.env.local` in the `webapp` folder and add your settings:
+#### 3.2 Configure Asgardeo Authentication
+1. Create a new app in Asgardeo Console.
+2. Collect:
+   * Client ID
+   * Client Secret
+   * Organization Name
+   * Application Name
+3. Create a `.env.local` file in `webapp/`:
 
 ```env
 AUTH_SECRET=your-secret-key
@@ -62,68 +101,36 @@ AUTH_ASGARDEO_ISSUER="https://api.asgardeo.io/t/{yourorgname}/oauth2/token"
 
 NEXT_PUBLIC_AUTH_ASGARDEO_LOGOUT_URL="https://api.asgardeo.io/t/{yourorgname}/oidc/logout"
 NEXT_PUBLIC_AUTH_ASGARDEO_POST_LOGOUT_REDIRECT_URL="http://localhost:3000/auth/sign-out"
+
 ```
 
-### 3. Set Up Prerequisites for Backend
+4. **Configure Backend Authentication** - In your `service.bal` file, update the JWT validator configuration:
 
-Before setting up the backend, you need to configure these services:
-
-#### PostgreSQL Database
-
-1. Install PostgreSQL on your computer or use a cloud service ( i prefer to go with supabase its soo easy btw)
-2. Create a new database for the project
-3. Copy and paste the contents of `service/resources/schema.sql` into your PostgreSQL database to create the required tables
-
-#### AWS S3
-
-1. Create an AWS account if you don't have one
-2. Create an S3 bucket for file storage
-3. Create an IAM user with S3 access
-4. Get your AWS Access Key ID and Secret Access Key
-
-#### Perplexity API
-
-1. Go to [perplexity.ai](https://perplexity.ai) and sign up
-2. Get your API key from the dashboard
-3. This is used for AI-powered feature
-
-#### Weather API
-
-1. Go to [openweathermap.org](https://openweathermap.org) and sign up
-2. Get your API key
-3. This is used for weather information
-
-#### Create Config.toml
-
-Create a file called `Config.toml` in the `service` folder and add your keys and configuration values from the PostgreSQL, AWS S3, Perplexity API, and Weather API services:
-
-```toml
-[service.utils]
-dbHost = "your-database-host"
-dbUser = "your-database-username"
-dbPassword = "your-database-password"
-dbPort = 5432
-dbName = "your-database-name"
-accessKeyId = "your-aws-access-key"
-secretAccessKey = "your-aws-secret-key"
-region = "your-aws-region"
-bucketName = "your-s3-bucket-name"
-
-[service.city_guide]
-perplexityApiKey = "your-perplexity-api-key"
-
-[service.tools]
-openWeatherApi = "your-openweathermap-api-key"
+```ballerina
+auth: [
+    {
+        jwtValidatorConfig: {
+            issuer: "https://api.asgardeo.io/t/{yourorgname}/oauth2/token",
+            audience: ["your-client-id"],
+            signatureConfig: {
+                jwksConfig: {
+                    url: "https://api.asgardeo.io/t/{yourorgname}/oauth2/jwks"
+                }
+            }
+        }
+    }
+]
 ```
 
-### 4. Set up the backend (Ballerina)
-
+#### 3.3 Run Frontend
 ```bash
-cd service
-bal run
+npm run dev
 ```
 
-### 5. Set up the news scrapper
+Frontend available at: `http://localhost:3000`
+
+### 4. News Scraper Setup (Flask + BeautifulSoup4)
+This service scrapes latest news from newswire.lk and provides live updates.
 
 ```bash
 cd newswired
@@ -134,51 +141,35 @@ venv\Scripts\activate
 source venv/bin/activate
 
 pip install -r requirements.txt
-```
-
-## Running the Application
-
-### Start the Frontend
-
-```bash
-cd webapp
-npm run dev
-```
-
-The webapp will be available at `http://localhost:3000`
-
-### Start the Backend
-
-```bash
-cd service
-bal run
-```
-
-The Ballerina service will start on the port `8080`
-
-### Start the News Scraper
-
-```bash
-cd newswired
 python app.py
 ```
 
-The news scraper will run on `http://localhost:5000/latest-news`
+News scraper runs at: `http://localhost:5000/latest-news`
 
-## Project Structure
+---
 
-```
-iwb/
-├── webapp/          # Next.js frontend
-├── service/         # Ballerina backend 
-├── newswired/       # news scraper
-```
+## Running the Application
+* **Backend (Ballerina):** `http://localhost:8080`
+* **Frontend (Next.js):** `http://localhost:3000`
+* **News Scraper (Flask):** `http://localhost:5000/latest-news`
+* **WebSocket Services:** `ws://localhost:9091` (incidents), `ws://localhost:9090` (chat)
+
 
 ## Features
+* **City Rank** - Rankings and insights for Sri Lankan cities
+* **Incident Report Map** - Report and view local incidents
+* **Meetups** - Connect with local groups and communities
+* **Find Remote Jobs** - Search and apply for online opportunities
+* **Co-working Places** - Discover work-friendly spaces
+* **Utility Tools** - Currency conversion, time zones, weather, and latest news
 
-- **Remote Job Search** - Find and apply for online jobs
-- **Co-working Spaces** - Find places to work
-- **Meetups** - Connect with local groups and events and chat inside realtime
-- **City Guide** - Find places to visit and things to do in srilanka
-- **The Calendar** - Lets people add contribute to calendar with locations and other details
-- **Utility Tools** - Currency conversion, weather info, and more ( see on the home page of the dashboard)
+
+## Ballerina capabilities we used
+
+- **HTTP** - RESTful API endpoints with resource functions
+- **WebSocket** - Real-time bidirectional communication for chat , meetups and incidents
+- **PostgreSQL Connector** - Database connectivity with connection pooling
+- **AWS S3 Connector** - Cloud storage integration for file uploads
+- **JWT Authentication** - Service-level JWT validation with WSO2 Asgardeo OIDC
+- **External HTTP Client** - Integration with weather, currency, and AI APIs
+- **Modular Architecture** - Organized service modules with proper separation of concerns
