@@ -15,7 +15,6 @@ import {
     IconInnerShadowTop,
     IconListDetails,
     IconDeviceIpadPin,
-    IconDeviceIpadPin,
     IconMapPinShare,
     IconMessageCircleSearch,
     IconReport,
@@ -23,13 +22,6 @@ import {
     IconSettings,
     IconSteam,
     IconUsers,
-    IconUsersPlus,
-    IconSmartHome,
-    IconBuildingBank,
-    IconMapSearch,
-    IconLocationPin,
-    IconNavigationShare,
-    IconSquareRoundedPercentage,
     IconUsersPlus,
     IconSmartHome,
     IconBuildingBank,
@@ -53,12 +45,11 @@ import {
     SidebarMenuItem
 } from "@/components/ui/sidebar"
 import { CalendarDays } from "lucide-react"
-import { CalendarDays } from "lucide-react"
 
 const data = {
     user: {
-        name: "Chamal Senarathna",
-        email: "chamals004@gmail.com",
+        name: "Hasitha Erandika",
+        email: "wickramasinghe.erandika@gmail.com",
         avatar: "/avatars/shadcn.jpg"
     },
     navMain: [
@@ -66,22 +57,6 @@ const data = {
             title: "Home",
             url: "/workspace",
             icon: IconSmartHome
-        },
-        {
-            title: "City Rank",
-            url: "/workspace/city-rank",
-            icon: IconNavigationShare
-        },
-        {
-            title: "Incident Map",
-            url: "/workspace/map",
-            icon: IconMapSearch
-        },
-        {
-            title: "Meetups",
-            url: "/workspace/meetups",
-            icon: IconDeviceIpadPin
-            
         },
         {
             title: "City Rank",
@@ -107,7 +82,6 @@ const data = {
             title: "Places",
             url: "/workspace/places",
             icon: IconBuildingBank
-            
         }
     ],
 }
@@ -122,7 +96,7 @@ export function AppSidebar({ ...props }) {
                             asChild
                             className="data-[slot=sidebar-menu-button]:!p-2  mb-3">
                             <a href="#">
-                                <span className="text-xl font-semibold">The Nomamnd Page</span>
+                                <span className="text-xl font-semibold">The Cinnamon Circle</span>
                             </a>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
