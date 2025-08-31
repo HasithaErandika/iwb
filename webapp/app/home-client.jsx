@@ -13,7 +13,7 @@ export default function HomeClient({ session }) {
       <div className="min-h-screen bg-white flex flex-col">
         <div className="flex-1 flex items-center justify-center px-12 py-6">
           <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            {/* Left Content */}
+            {/* left */}
             <motion.div
               className="space-y-6"
               initial={{ opacity: 0, x: -20 }}
@@ -38,7 +38,7 @@ export default function HomeClient({ session }) {
                 Your all-in-one digital nomad hub for Sri Lanka. Accommodation,
                 remote work, community, and financial planning—simplified.
               </motion.p>{" "}
-              {/* Authentication buttons */}
+              {/* auth btns */}
               <motion.div
                 className="flex flex-col sm:flex-row gap-4"
                 initial={{ opacity: 0, y: 20 }}
@@ -109,7 +109,7 @@ export default function HomeClient({ session }) {
           </div>
         </div>
 
-        {/* Footer */}
+        {/* footer */}
         <footer className="py-5 px-12">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center text-sm text-gray-600 gap-4">
             <div className="flex flex-col sm:flex-row items-center gap-4">

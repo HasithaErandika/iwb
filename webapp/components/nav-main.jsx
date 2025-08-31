@@ -20,7 +20,7 @@ export function NavMain({ items }) {
             <SidebarGroupContent className="flex flex-col gap-2">
                 <SidebarMenu>
                     {items.map((item) => {
-                        const isActive = pathname === item.url;
+                        const isActive = pathname === item.url || (item.url !== '/workspace' && pathname.startsWith(item.url + '/'));
 
                         return (
                             <SidebarMenuItem key={item.title}>
@@ -29,7 +29,7 @@ export function NavMain({ items }) {
                                     tooltip={item.title}
                                     className={cn(
                                         "min-h-10 px-3 py-3 text-lg",
-                                        isActive && "bg-black text-white hover:bg-black hover:text-white"
+                                        isActive && "bg-indigo-500 text-white hover:bg-indigo-600 hover:text-white"
                                     )}
                                 >
                                     <Link href={item.url}>

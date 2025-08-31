@@ -1,29 +1,16 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import {
-  Search,
-  MapPin,
-  Clock,
-  Briefcase,
-  Calendar,
-  Users,
-  X,
-  Bookmark,
-  DollarSign,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import Image from "next/image";
+import { useState, useEffect } from "react"
+import { Search, MapPin, Briefcase, Users, X, DollarSign, AlertCircle, RefreshCw, XCircle } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { getAuthHeaders } from "@/lib/api"
+import { useSession } from "next-auth/react"
 
 const filters = [
   {
@@ -68,67 +55,66 @@ const filters = [
       { value: "onsite", label: "On-site" },
     ],
   },
-];
+]
+
 
 export default function JobListingsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const isMobile = useIsMobile()
+  const [searchQuery, setSearchQuery] = useState("")
   const [activeFilters, setActiveFilters] = useState({
     positionType: "all",
     category: "all",
     remote: "all",
     minSalary: "",
     maxSalary: "",
-  });
-  const [savedJobs, setSavedJobs] = useState([]);
-  const [sortBy, setSortBy] = useState("newest");
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  })
+  const [savedJobs, setSavedJobs] = useState([])
+  const [sortBy, setSortBy] = useState("newest")
+  const [jobs, setJobs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const { data: session } = useSession()
 
-  // Fetch jobs from API
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        setLoading(true);
+        setLoading(true)
+        setError(null)
 
-        // Build query parameters
-        const params = new URLSearchParams();
+        const params = new URLSearchParams()
         if (activeFilters.positionType && activeFilters.positionType !== "all")
-          params.append("positionType", activeFilters.positionType);
+          params.append("positionType", activeFilters.positionType)
         if (activeFilters.category && activeFilters.category !== "all")
-          params.append("category", activeFilters.category);
-        if (activeFilters.minSalary)
-          params.append("minSalary", activeFilters.minSalary);
-        if (activeFilters.maxSalary)
-          params.append("maxSalary", activeFilters.maxSalary);
+          params.append("category", activeFilters.category)
+        if (activeFilters.minSalary) params.append("minSalary", activeFilters.minSalary)
+        if (activeFilters.maxSalary) params.append("maxSalary", activeFilters.maxSalary)
 
-        const queryString = params.toString();
-        const url = `http://localhost:8080/api/jobs${
-          queryString ? `?${queryString}` : ""
-        }`;
+        const queryString = params.toString()
+        const url = `http://localhost:8080/api/jobs${queryString ? `?${queryString}` : ""}`
 
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: getAuthHeaders(session) })
         if (!response.ok) {
-          throw new Error("Failed to fetch jobs");
+          throw new Error(`Failed to fetch jobs (${response.status})`)
         }
-        const jobsData = await response.json();
-        setJobs(jobsData);
+        const jobsData = await response.json()
+        setJobs(jobsData)
       } catch (err) {
-        setError(err.message);
+        setError(err.message)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchJobs();
-  }, [activeFilters]);
+    fetchJobs()
+  }, [activeFilters, session])
 
   const updateFilter = (filterId, value) => {
     setActiveFilters((prev) => ({
       ...prev,
       [filterId]: value,
-    }));
-  };
+    }))
+  }
 
   const clearAllFilters = () => {
     setActiveFilters({
@@ -137,364 +123,232 @@ export default function JobListingsPage() {
       remote: "all",
       minSalary: "",
       maxSalary: "",
-    });
-  };
+    })
+  }
 
   const toggleSaveJob = (jobUrl) => {
-    setSavedJobs((prev) =>
-      prev.includes(jobUrl)
-        ? prev.filter((url) => url !== jobUrl)
-        : [...prev, jobUrl]
-    );
-  };
+    setSavedJobs((prev) => (prev.includes(jobUrl) ? prev.filter((url) => url !== jobUrl) : [...prev, jobUrl]))
+  }
 
-  // Filter jobs based on search query and client-side filters
+  const handleJobClick = (jobUrl) => {
+    window.open(jobUrl, "_blank")
+  }
+
+  const retryFetch = () => {
+    setError(null)
+    setLoading(true)
+    setActiveFilters((prev) => ({ ...prev }))
+  }
+
   const filteredJobs = jobs.filter((job) => {
-    // Text search filter
     const matchesSearch =
       !searchQuery ||
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.description.toLowerCase().includes(searchQuery.toLowerCase());
+      job.description.toLowerCase().includes(searchQuery.toLowerCase())
 
-    // Remote filter (client-side since API doesn't support it)
     const matchesRemote =
       !activeFilters.remote ||
       activeFilters.remote === "all" ||
-      (activeFilters.remote === "remote" &&
-        job.location.toLowerCase().includes("remote")) ||
-      (activeFilters.remote === "hybrid" &&
-        job.location.toLowerCase().includes("hybrid")) ||
+      (activeFilters.remote === "remote" && job.location.toLowerCase().includes("remote")) ||
+      (activeFilters.remote === "hybrid" && job.location.toLowerCase().includes("hybrid")) ||
       (activeFilters.remote === "onsite" &&
         !job.location.toLowerCase().includes("remote") &&
-        !job.location.toLowerCase().includes("hybrid"));
+        !job.location.toLowerCase().includes("hybrid"))
 
-    return matchesSearch && matchesRemote;
-  });
+    return matchesSearch && matchesRemote
+  })
 
-  // Extract skills from tags
-  const getSkillsFromTags = (tags) => {
-    if (!tags) return [];
-    return tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0)
-      .slice(0, 5);
-  };
+  const formatLocation = (loc) => {
+    if (!loc) return "";
+    return loc
+      .split(/[,|/]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join("; ");
+  }
 
-  // Format date
   const formatDate = (dateString) => {
     try {
-      const date = new Date(dateString);
-      return `Posted ${date.toLocaleDateString("en-US", {
+      const date = new Date(dateString)
+      const now = new Date()
+      const diffTime = Math.abs(now - date)
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+      if (diffDays === 1) return "1 day ago"
+      if (diffDays < 7) return `${diffDays} days ago`
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+
+      return date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
-        year: "numeric",
-      })}`;
+      })
     } catch {
-      return dateString;
+      return "Recently"
     }
-  };
-
-  // Clean HTML content from description
-  const cleanHtmlContent = (htmlString) => {
-    if (!htmlString) return "";
-
-    // Remove HTML tags and decode HTML entities
-    const cleanText = htmlString
-      .replace(/<[^>]*>/g, "") // Remove HTML tags
-      .replace(/&nbsp;/g, " ") // Replace &nbsp; with spaces
-      .replace(/&amp;/g, "&") // Replace &amp; with &
-      .replace(/&lt;/g, "<") // Replace &lt; with <
-      .replace(/&gt;/g, ">") // Replace &gt; with >
-      .replace(/&quot;/g, '"') // Replace &quot; with "
-      .replace(/&#39;/g, "'") // Replace &#39; with '
-      .replace(/\s+/g, " ") // Replace multiple spaces with single space
-      .trim();
-
-    return cleanText;
-  };
-
-  // Generate company logo placeholder
-  const getCompanyLogo = (companyName) => {
-    const colors = [
-      "bg-orange-500",
-      "bg-blue-500",
-      "bg-green-500",
-      "bg-purple-500",
-      "bg-red-500",
-      "bg-yellow-500",
-    ];
-    const colorIndex = companyName.length % colors.length;
-    return colors[colorIndex];
-  };
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen p-6 bg-gray-50">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Find the Remote Job That Fits Your Life
-          </h1>
-          <div className="text-center py-12">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading jobs...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-[1100px] mx-auto px-2 py-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
+            <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
+          </div>
+          <div className="flex items-center justify-center py-16">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-black">Loading remote jobs...</p>
             </div>
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen p-6 bg-gray-50">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Find the Remote Job That Fits Your Life
-          </h1>
-          <div className="text-center py-12">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-              <div className="text-red-500 mb-4">
-                <svg
-                  className="mx-auto h-12 w-12"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Something went wrong
-              </h3>
-              <p className="text-red-600 mb-4">Error: {error}</p>
-              <Button
-                onClick={() => window.location.reload()}
-                className="bg-gray-900 hover:bg-gray-800"
-              >
-                Retry
-              </Button>
-            </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-[1100px] mx-auto px-2 py-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
+            <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
           </div>
+          <Alert className="border-red-200 bg-red-50 mb-6">
+            <XCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {error.includes("Failed to fetch") ? "Please check your internet connection and try again." : error}
+            </AlertDescription>
+          </Alert>
+          <Button onClick={retryFetch} variant="outline">
+            Try Again
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          Find the Remote Job That Fits Your Life
-        </h1>
-
-        {/* Search Bar */}
-        <div className="relative max-w-xs w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search Jobs"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 text-base bg-white border-gray-200"
-          />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-[1100px] mx-auto px-2 py-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
+          <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          {filters.map((filter) => {
-            const Icon = filter.icon;
-            const currentValue = activeFilters[filter.id];
-            return (
-              <Select
-                key={filter.id}
-                value={currentValue}
-                onValueChange={(value) => updateFilter(filter.id, value)}
-              >
-                <SelectTrigger className="w-40 h-10 bg-white border-gray-200">
-                  <div className="flex items-center">
-                    <Icon className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder={filter.label} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All {filter.label}</SelectItem>
-                  {filter.options.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            );
-          })}
-
-          {/* Salary Range Filters */}
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="number"
-                placeholder="Min Salary"
-                value={activeFilters.minSalary}
-                onChange={(e) => updateFilter("minSalary", e.target.value)}
-                className="w-32 h-10 bg-white border-gray-200 pl-10"
-              />
-            </div>
-            <span className="text-gray-400">to</span>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="number"
-                placeholder="Max Salary"
-                value={activeFilters.maxSalary}
-                onChange={(e) => updateFilter("maxSalary", e.target.value)}
-                className="w-32 h-10 bg-white border-gray-200 pl-10"
-              />
-            </div>
+        <div className="mb-6 flex items-center gap-3">
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search jobs, companies, or keywords..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-9"
+            />
           </div>
 
-          {Object.entries(activeFilters).some(
-            ([key, value]) => value !== "" && value !== "all"
-          ) && (
-            <Button
-              variant="ghost"
-              onClick={clearAllFilters}
-              className="h-10 px-4 text-gray-600 hover:text-gray-800"
+          <Sheet open={isOpen} onOpenChange={(open) => !open && setIsOpen(false)}>
+            <SheetTrigger asChild>
+              <Button className="bg-indigo-600 text-white hover:bg-indigo-700 h-9 px-4" onClick={() => setIsOpen(true)}>Advanced Filters</Button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className={`
+                 ${isMobile
+                  ? "max-w-[95%] max-h-[80vh] p-4 rounded-xl"
+                  : "max-w-3xl p-6 rounded-xl"
+                }
+                 overflow-hidden flex flex-col [&>button]:hidden
+               `}
             >
-              <X className="h-4 w-4 mr-2" />
-              Clear Filters (
-              {
-                Object.entries(activeFilters).filter(
-                  ([key, value]) => value !== "" && value !== "all"
-                ).length
-              }
-              )
-            </Button>
-          )}
+              <div className="absolute right-3 top-3 z-50">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 rounded-full hover:bg-gray-100"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </div>
 
-          <div className="ml-auto text-sm text-gray-600">
-            {filteredJobs.length} jobs found
-          </div>
+              <SheetHeader className="p-4 pb-2">
+                <SheetTitle className="text-xl">Advanced Filters</SheetTitle>
+              </SheetHeader>
+              <div className="px-4 pt-2 pb-4 space-y-3">
+                {filters.map((filter) => {
+                  const currentValue = activeFilters[filter.id]
+                  return (
+                    <div key={filter.id} className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">{filter.label}</label>
+                      <Select value={currentValue} onValueChange={(value) => updateFilter(filter.id, value)}>
+                        <SelectTrigger className="h-9 bg-white border-gray-300 w-full">
+                          <SelectValue placeholder={filter.label} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All {filter.label}</SelectItem>
+                          {filter.options.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )
+                })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Min salary</label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 50000"
+                      value={activeFilters.minSalary}
+                      onChange={(e) => updateFilter("minSalary", e.target.value)}
+                      className="h-9 bg-white border-gray-300 w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Max salary</label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 120000"
+                      value={activeFilters.maxSalary}
+                      onChange={(e) => updateFilter("maxSalary", e.target.value)}
+                      className="h-9 bg-white border-gray-300 w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+              <SheetFooter>
+                <Button variant="ghost" size="sm" onClick={clearAllFilters}>Clear</Button>
+                <SheetClose asChild>
+                  <Button size="sm" className="text-white bg-indigo-600 hover:bg-indigo-700">Apply</Button>
+                </SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
         </div>
 
-        {/* Header with Sort */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Search Listings
-          </h1>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-48 bg-white border-gray-200">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Sort by: Newest</SelectItem>
-              <SelectItem value="oldest">Sort by: Oldest</SelectItem>
-              <SelectItem value="salary-high">
-                Sort by: Salary (High to Low)
-              </SelectItem>
-              <SelectItem value="salary-low">
-                Sort by: Salary (Low to High)
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Job Listings */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filteredJobs.map((job) => (
             <Card
               key={job.url}
-              className="bg-white transition-all duration-500 hover:border-orange-500"
+              className="bg-white border-2 border-gray-200 hover:border-indigo-600 rounded-xl shadow-none transition-all duration-200 cursor-pointer"
+              onClick={() => handleJobClick(job.url)}
             >
-              <CardContent className="px-6 py-4">
-                <div className="flex items-start justify-between mb-3">
-                  {/* Left side - Company info */}
-                  <div className="flex items-start space-x-3 flex-1">
-                    <div className="w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-lg">
-                        {job.company_name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-gray-900 mb-1">
-                        {job.title}
-                      </h2>
-                      <p className="text-gray-600 text-base mb-2">
-                        {job.company_name}
-                      </p>
-                      <p className="text-gray-500 text-base">
-                        {job.category_name}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right side - Actions */}
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSaveJob(job.url);
-                      }}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <Bookmark
-                        className={`h-5 w-5 transition-colors ${
-                          savedJobs.includes(job.url)
-                            ? "fill-current text-blue-600"
-                            : "text-gray-400 hover:text-gray-600"
-                        }`}
-                      />
-                    </Button>
-                    <Button
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 text-base font-semibold transition-all duration-200 hover:shadow-lg"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(job.url, "_blank");
-                      }}
-                    >
-                      Apply →
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Job details row */}
+              <CardContent className="px-5 py-1">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      <Badge
-                        variant="outline"
-                        className="text-sm font-normal border-gray-300"
-                      >
-                        <Briefcase className="h-4 w-4 mr-1" />
-                        Full-Time
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className="text-sm font-normal border-gray-300"
-                      >
-                        <Users className="h-4 w-4 mr-1" />
-                        Remote
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className="text-sm font-normal border-gray-300"
-                      >
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {job.location}
-                      </Badge>
-                    </div>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h3 className="text-xl leading-6 font-medium text-slate-900 mb-1 truncate">{job.title}</h3>
+                    <p className="text-lg leading-5 text-slate-600 truncate">{formatLocation(job.location)}</p>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    Posted on {formatDate(job.pub_date).replace("Posted ", "")}
+                  <div className="ml-4 flex-shrink-0">
+                    <svg className="w-5 h-5 text-white hover:text-black transition-transform duration-150 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </div>
               </CardContent>
@@ -503,20 +357,17 @@ export default function JobListingsPage() {
         </div>
 
         {filteredJobs.length === 0 && !loading && (
-          <div className="text-center py-12 px-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-              <Briefcase className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No jobs found
-              </h3>
-              <p className="text-gray-600">
-                Try adjusting your search criteria or filters to find more
-                opportunities.
-              </p>
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Briefcase className="w-8 h-8 text-gray-400" />
             </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
+            <p className="text-gray-600 max-w-md mx-auto">
+              Try adjusting your search terms or filters to discover more opportunities.
+            </p>
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }
