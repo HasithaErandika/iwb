@@ -3,7 +3,7 @@ import 'service.utils;
 import ballerina/sql;
 import ballerina/time;
 
-public function createOrUpdateUser(UserCreateRequest userRequest) returns UserResponse|error {
+public isolated function createOrUpdateUser(UserCreateRequest userRequest) returns UserResponse|error {
     string currentTime = time:utcNow().toString();
 
     UserRecord|sql:Error existingUser = utils:getUserById(userRequest.userId);
@@ -60,7 +60,7 @@ public function createOrUpdateUser(UserCreateRequest userRequest) returns UserRe
     }
 }
 
-public function updateUserProfile(string userId, UserUpdateRequest updateRequest) returns UserResponse|error {
+public isolated function updateUserProfile(string userId, UserUpdateRequest updateRequest) returns UserResponse|error {
     string currentTime = time:utcNow().toString();
 
     UserRecord|sql:Error existingUser = utils:getUserById(userId);
@@ -92,7 +92,7 @@ public function updateUserProfile(string userId, UserUpdateRequest updateRequest
     return {success: true, message: "User profile updated successfully", data: userData};
 }
 
-public function getAllUsers() returns UserListResponse|error {
+public isolated function getAllUsers() returns UserListResponse|error {
     UserRecord[]|sql:Error dbResult = utils:getAllUsers();
     if dbResult is sql:Error {
         return {success: false, message: "Failed to fetch users: " + dbResult.message()};
@@ -107,7 +107,7 @@ public function getAllUsers() returns UserListResponse|error {
     return {success: true, message: "Users fetched successfully", data: users};
 }
 
-public function getUserById(string userId) returns UserResponse|error {
+public isolated function getUserById(string userId) returns UserResponse|error {
     UserRecord|sql:Error dbResult = utils:getUserById(userId);
     if dbResult is sql:Error {
         return {success: false, message: "User not found"};
@@ -117,7 +117,7 @@ public function getUserById(string userId) returns UserResponse|error {
     return {success: true, message: "User fetched successfully", data: userData};
 }
 
-function mapUserRecordToUser(UserRecord userRecord) returns User {
+isolated function mapUserRecordToUser(UserRecord userRecord) returns User {
     return {
         userId: userRecord.user_id,
         username: userRecord.username,

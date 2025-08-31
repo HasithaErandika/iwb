@@ -6,7 +6,7 @@ import ballerina/sql;
 import ballerina/time;
 import ballerina/uuid;
 
-public function createMeetup(http:Request req) returns EventCreationResult|error {
+public isolated function createMeetup(http:Request req) returns EventCreationResult|error {
     mime:Entity[]|http:ClientError bodyParts = req.getBodyParts();
     if bodyParts is error {
         return {success: false, message: "Error parsing multipart data"};
@@ -98,7 +98,7 @@ public function createMeetup(http:Request req) returns EventCreationResult|error
     return {success: true, message: "Event created successfully and saved to database"};
 }
 
-public function getAllMeetups() returns MeetupListResponse|error {
+public isolated function getAllMeetups() returns MeetupListResponse|error {
     utils:MeetupRecord[]|sql:Error dbResult = utils:getAllMeetups();
     if dbResult is sql:Error {
         return {success: false, message: "Failed to fetch meetups: " + dbResult.message()};
@@ -130,7 +130,7 @@ public function getAllMeetups() returns MeetupListResponse|error {
     return {success: true, message: "Meetups fetched successfully", data: eventDataList};
 }
 
-public function getMeetupById(string eventId) returns MeetupResponse|error {
+public isolated function getMeetupById(string eventId) returns MeetupResponse|error {
     utils:MeetupRecord|sql:Error dbResult = utils:getMeetupById(eventId);
     if dbResult is sql:Error {
         return {success: false, message: "Meetup not found"};
@@ -189,7 +189,7 @@ public function updateMeetup(string eventId, EventUpdateRequest updateRequest) r
     return {success: true, message: "Meetup updated successfully"};
 }
 
-public function deleteMeetup(string eventId) returns EventCreationResult|error {
+public isolated function deleteMeetup(string eventId) returns EventCreationResult|error {
     sql:ExecutionResult|sql:Error dbResult = utils:deleteMeetup(eventId);
     if dbResult is sql:Error {
         return {success: false, message: "Failed to delete meetup: " + dbResult.message()};
@@ -203,7 +203,7 @@ public function deleteMeetup(string eventId) returns EventCreationResult|error {
     return {success: true, message: "Meetup deleted successfully"};
 }
 
-function parseDecimal(string? value) returns decimal? {
+isolated function parseDecimal(string? value) returns decimal? {
     if value is string && value != "" {
         decimal|error result = decimal:fromString(value);
         return result is decimal ? result : ();
@@ -211,7 +211,7 @@ function parseDecimal(string? value) returns decimal? {
     return ();
 }
 
-function parseInt(string? value) returns int? {
+isolated function parseInt(string? value) returns int? {
     if value is string && value != "" {
         int|error result = int:fromString(value);
         return result is int ? result : ();

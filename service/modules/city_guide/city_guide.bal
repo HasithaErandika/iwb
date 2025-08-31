@@ -8,7 +8,7 @@ final http:Client perplexityClient = check new ("https://api.perplexity.ai",
     }
 );
 
-public function askAnything(string userMessage) returns CityGuideResponse|error {
+public isolated function askAnything(string userMessage) returns CityGuideResponse|error {
     PerplexityRequest requestPayload = {
         model: "sonar-pro",
         messages: [
@@ -64,7 +64,6 @@ public function askAnything(string userMessage) returns CityGuideResponse|error 
         };
     }
 
-    // Extract the message content from the first choice
     json firstChoice = choicesArray[0];
     json|error messageJson = firstChoice.message;
     if messageJson is error {

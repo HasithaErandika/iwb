@@ -50,7 +50,7 @@ dependencies = [
 [[package]]
 org = "ballerina"
 name = "data.jsondata"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "lang.object"}
@@ -70,7 +70,7 @@ dependencies = [
 [[package]]
 org = "ballerina"
 name = "http"
-version = "2.14.2"
+version = "2.14.4"
 dependencies = [
 	{org = "ballerina", name = "auth"},
 	{org = "ballerina", name = "cache"},
@@ -365,7 +365,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "websocket"
-version = "2.14.0"
+version = "2.14.1"
 dependencies = [
 	{org = "ballerina", name = "auth"},
 	{org = "ballerina", name = "constraint"},
@@ -488,9 +488,12 @@ modules = [
 	{org = "user", packageName = "service", moduleName = "service"},
 	{org = "user", packageName = "service", moduleName = "service.chat"},
 	{org = "user", packageName = "service", moduleName = "service.city_guide"},
+	{org = "user", packageName = "service", moduleName = "service.city_rank"},
+	{org = "user", packageName = "service", moduleName = "service.incident_map"},
 	{org = "user", packageName = "service", moduleName = "service.jobs"},
 	{org = "user", packageName = "service", moduleName = "service.meetups"},
 	{org = "user", packageName = "service", moduleName = "service.places"},
+	{org = "user", packageName = "service", moduleName = "service.tools"},
 	{org = "user", packageName = "service", moduleName = "service.users"},
 	{org = "user", packageName = "service", moduleName = "service.utils"}
 ]

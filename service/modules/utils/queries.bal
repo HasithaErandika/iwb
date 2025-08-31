@@ -1,7 +1,7 @@
 import ballerina/sql;
 
 //meetups
-public function insertMeetup(MeetupInsert meetupData) returns sql:ExecutionResult|sql:Error {
+public isolated function insertMeetup(MeetupInsert meetupData) returns sql:ExecutionResult|sql:Error {
     sql:ParameterizedQuery insertQuery = `
         INSERT INTO meetups (
             event_id, event_name, event_description, event_start_date, 
@@ -22,7 +22,7 @@ public function insertMeetup(MeetupInsert meetupData) returns sql:ExecutionResul
     return dbClient->execute(insertQuery);
 }
 
-public function getMeetupById(string eventId) returns MeetupRecord|sql:Error {
+public isolated function getMeetupById(string eventId) returns MeetupRecord|sql:Error {
     sql:ParameterizedQuery selectQuery = `
         SELECT event_id, event_name, event_description, event_start_date, 
                event_start_time, event_end_date, event_end_time, venue_name, 
@@ -36,7 +36,7 @@ public function getMeetupById(string eventId) returns MeetupRecord|sql:Error {
     return dbClient->queryRow(selectQuery);
 }
 
-public function getAllMeetups() returns MeetupRecord[]|sql:Error {
+public isolated function getAllMeetups() returns MeetupRecord[]|sql:Error {
     sql:ParameterizedQuery selectQuery = `
         SELECT event_id, event_name, event_description, event_start_date, 
                event_start_time, event_end_date, event_end_time, venue_name, 
@@ -75,7 +75,7 @@ public function updateMeetup(string eventId, MeetupUpdate updateData) returns sq
     return dbClient->execute(updateQuery);
 }
 
-public function deleteMeetup(string eventId) returns sql:ExecutionResult|sql:Error {
+public isolated function deleteMeetup(string eventId) returns sql:ExecutionResult|sql:Error {
     sql:ParameterizedQuery deleteQuery = `DELETE FROM meetups WHERE event_id = ${eventId}`;
     return dbClient->execute(deleteQuery);
 }
@@ -84,7 +84,7 @@ public function deleteMeetup(string eventId) returns sql:ExecutionResult|sql:Err
 
 // user operations
 
-public function insertUser(UserInsert userData) returns sql:ExecutionResult|sql:Error {
+public isolated function insertUser(UserInsert userData) returns sql:ExecutionResult|sql:Error {
     sql:ParameterizedQuery insertQuery = `
         INSERT INTO users (
             user_id, username, first_name, last_name, email, 
@@ -100,7 +100,7 @@ public function insertUser(UserInsert userData) returns sql:ExecutionResult|sql:
     return dbClient->execute(insertQuery);
 }
 
-public function getUserById(string userId) returns UserRecord|sql:Error {
+public isolated function getUserById(string userId) returns UserRecord|sql:Error {
     sql:ParameterizedQuery selectQuery = `
         SELECT user_id, username, first_name, last_name, email, 
                country, mobile_number, birthdate, bio, created_at, updated_at
@@ -111,7 +111,7 @@ public function getUserById(string userId) returns UserRecord|sql:Error {
     return dbClient->queryRow(selectQuery);
 }
 
-public function getAllUsers() returns UserRecord[]|sql:Error {
+public isolated function getAllUsers() returns UserRecord[]|sql:Error {
     sql:ParameterizedQuery selectQuery = `
         SELECT user_id, username, first_name, last_name, email, 
                country, mobile_number, birthdate, bio, created_at, updated_at
@@ -124,7 +124,7 @@ public function getAllUsers() returns UserRecord[]|sql:Error {
         select user;
 }
 
-public function updateUser(string userId, UserUpdate updateData) returns sql:ExecutionResult|sql:Error {
+public isolated function updateUser(string userId, UserUpdate updateData) returns sql:ExecutionResult|sql:Error {
     sql:ParameterizedQuery updateQuery = `
         UPDATE users SET 
             first_name = ${updateData.firstName},
@@ -251,6 +251,25 @@ public type ChatMessageInsert record {|
     string createdAt;
 |};
 
+// city chat types
+public type CityChatMessageRecord record {|
+    string message_id;
+    string city_id;
+    string user_id;
+    string user_name;
+    string message;
+    string created_at;
+|};
+
+public type CityChatMessageInsert record {|
+    string messageId;
+    string cityId;
+    string userId;
+    string userName;
+    string message;
+    string createdAt;
+|};
+
 // chat
 public function insertChatMessage(ChatMessageInsert messageData) returns sql:ExecutionResult|sql:Error {
     sql:ParameterizedQuery insertQuery = `
@@ -265,7 +284,7 @@ public function insertChatMessage(ChatMessageInsert messageData) returns sql:Exe
     return dbClient->execute(insertQuery);
 }
 
-public function getChatMessagesByMeetupId(string meetupId) returns ChatMessageRecord[]|sql:Error {
+public isolated function getChatMessagesByMeetupId(string meetupId) returns ChatMessageRecord[]|sql:Error {
     sql:ParameterizedQuery selectQuery = `
         SELECT message_id, meetup_id, user_id, user_name, message, created_at
         FROM chat_messages 
@@ -278,4 +297,31 @@ public function getChatMessagesByMeetupId(string meetupId) returns ChatMessageRe
         select message;
 }
 
-// TODO : need to cleanup this
+// Note: City chat reads/writes use the dedicated city_chat table via functions below
+
+// city chat functions
+public function insertCityChatMessage(CityChatMessageInsert messageData) returns sql:ExecutionResult|sql:Error {
+    sql:ParameterizedQuery insertQuery = `
+        INSERT INTO city_chat (
+            message_id, city_id, user_id, user_name, message, created_at
+        ) VALUES (
+            ${messageData.messageId}, ${messageData.cityId}, ${messageData.userId}, 
+            ${messageData.userName}, ${messageData.message}, ${messageData.createdAt}
+        )
+    `;
+
+    return dbClient->execute(insertQuery);
+}
+
+public isolated function getCityChatMessagesByCityId(string cityId) returns CityChatMessageRecord[]|sql:Error {
+    sql:ParameterizedQuery selectQuery = `
+        SELECT message_id, city_id, user_id, user_name, message, created_at
+        FROM city_chat 
+        WHERE city_id = ${cityId}
+        ORDER BY created_at ASC
+    `;
+
+    stream<CityChatMessageRecord, sql:Error?> messageStream = dbClient->query(selectQuery);
+    return from CityChatMessageRecord message in messageStream
+        select message;
+}

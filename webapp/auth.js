@@ -1,6 +1,6 @@
 import NextAuth from "next-auth"
 import Asgardeo from "next-auth/providers/asgardeo"
-async function storeUserInBackend(profile) {
+async function storeUserInBackend(profile,accessToken) {
   try {
     const userData = {
       userId: profile.sub,
@@ -17,7 +17,10 @@ async function storeUserInBackend(profile) {
 
     const response = await fetch('http://localhost:8080/api/users', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+      },      
       body: JSON.stringify(userData)
     });
 
@@ -45,13 +48,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
     })
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 24 * 60 * 60,
+    updateAge: 60 * 60,
+  },
   pages: {
     signIn: "/",
   },
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === 'asgardeo' && profile) {
-        await storeUserInBackend(profile);
+        await storeUserInBackend(profile,account.access_token);
       }
       return true; 
     },
@@ -73,6 +81,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       if (account) {
         token.id_token = account.id_token
+        token.access_token = account.access_token 
       }
 
       return token
@@ -83,6 +92,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.given_name = token.given_name
         session.user.family_name = token.family_name
         session.user.id_token = token.id_token
+        session.access_token = token.access_token
       }
 
       return session

@@ -14,6 +14,7 @@ import {
     IconHelp,
     IconInnerShadowTop,
     IconListDetails,
+    IconDeviceIpadPin,
     IconMapPinShare,
     IconMessageCircleSearch,
     IconReport,
@@ -21,7 +22,13 @@ import {
     IconSettings,
     IconSteam,
     IconUsers,
-    IconUsersPlus
+    IconUsersPlus,
+    IconSmartHome,
+    IconBuildingBank,
+    IconMapSearch,
+    IconLocationPin,
+    IconNavigationShare,
+    IconSquareRoundedPercentage
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -37,6 +44,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem
 } from "@/components/ui/sidebar"
+import { CalendarDays } from "lucide-react"
 
 const data = {
     user: {
@@ -48,7 +56,22 @@ const data = {
         {
             title: "Home",
             url: "/workspace",
-            icon: IconDashboard
+            icon: IconSmartHome
+        },
+        {
+            title: "City Rank",
+            url: "/workspace/city-rank",
+            icon: IconNavigationShare
+        },
+        {
+            title: "Incident Map",
+            url: "/workspace/map",
+            icon: IconMapSearch
+        },
+        {
+            title: "Meetups",
+            url: "/workspace/meetups",
+            icon: IconDeviceIpadPin
         },
         {
             title: "Remote Jobs",
@@ -58,59 +81,9 @@ const data = {
         {
             title: "Places",
             url: "/workspace/places",
-            icon: IconMapPinShare
-        },
-        {
-            title: "Meetups",
-            url: "/workspace/meetups",
-            icon: IconSteam
-        },
-        {
-            title: "City Guide",
-            url: "/workspace/city-guide",
-            icon: IconMessageCircleSearch
-        },
-        {
-            title: "Friends Finder",
-            url: "/workspace/friends-finder",
-            icon: IconUsersPlus
+            icon: IconBuildingBank
         }
     ],
-
-    navSecondary: [
-        {
-            title: "Settings",
-            url: "#",
-            icon: IconSettings
-        },
-        {
-            title: "Get Help",
-            url: "#",
-            icon: IconHelp
-        },
-        {
-            title: "Search",
-            url: "#",
-            icon: IconSearch
-        }
-    ],
-    documents: [
-        {
-            name: "Data Library",
-            url: "#",
-            icon: IconDatabase
-        },
-        {
-            name: "Reports",
-            url: "#",
-            icon: IconReport
-        },
-        {
-            name: "Word Assistant",
-            url: "#",
-            icon: IconFileWord
-        }
-    ]
 }
 
 export function AppSidebar({ ...props }) {
@@ -123,8 +96,7 @@ export function AppSidebar({ ...props }) {
                             asChild
                             className="data-[slot=sidebar-menu-button]:!p-2  mb-3">
                             <a href="#">
-                                <IconInnerShadowTop className="!size-8" />
-                                <span className="text-lg font-semibold">CeylonNomad.</span>
+                                <span className="text-xl font-semibold">The Cinnamon Circle</span>
                             </a>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -132,7 +104,6 @@ export function AppSidebar({ ...props }) {
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={data.navMain} />
-                <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>
                 <NavUser user={data.user} />
