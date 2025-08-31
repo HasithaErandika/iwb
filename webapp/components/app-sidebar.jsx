@@ -15,6 +15,7 @@ import {
     IconInnerShadowTop,
     IconListDetails,
     IconDeviceIpadPin,
+    IconDeviceIpadPin,
     IconMapPinShare,
     IconMessageCircleSearch,
     IconReport,
@@ -22,6 +23,13 @@ import {
     IconSettings,
     IconSteam,
     IconUsers,
+    IconUsersPlus,
+    IconSmartHome,
+    IconBuildingBank,
+    IconMapSearch,
+    IconLocationPin,
+    IconNavigationShare,
+    IconSquareRoundedPercentage
     IconUsersPlus,
     IconSmartHome,
     IconBuildingBank,
@@ -44,6 +52,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem
 } from "@/components/ui/sidebar"
+import { CalendarDays } from "lucide-react"
 import { CalendarDays } from "lucide-react"
 
 const data = {
@@ -72,6 +81,22 @@ const data = {
             title: "Meetups",
             url: "/workspace/meetups",
             icon: IconDeviceIpadPin
+            icon: IconSmartHome
+        },
+        {
+            title: "City Rank",
+            url: "/workspace/city-rank",
+            icon: IconNavigationShare
+        },
+        {
+            title: "Incident Map",
+            url: "/workspace/map",
+            icon: IconMapSearch
+        },
+        {
+            title: "Meetups",
+            url: "/workspace/meetups",
+            icon: IconDeviceIpadPin
         },
         {
             title: "Remote Jobs",
@@ -81,6 +106,7 @@ const data = {
         {
             title: "Places",
             url: "/workspace/places",
+            icon: IconBuildingBank
             icon: IconBuildingBank
         }
     ],
