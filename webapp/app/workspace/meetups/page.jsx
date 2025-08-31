@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -44,12 +44,19 @@ export default function EventsListing() {
   const [savedIds, setSavedIds] = useState([]);
   const { data: session } = useSession()
 
-  const fetchMeetups = async () => {
+  const fetchMeetups = useCallback(async () => {
+    // Only fetch if session exists and has access_token
+    if (!session?.access_token) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/api/meetups`, { headers: getAuthHeaders(session) });
+      const response = await fetch(`${API_BASE_URL}/api/meetups`, {
+        headers: getAuthHeaders(session)
+      });
       const data = await response.json();
 
       if (response.ok) {
@@ -67,11 +74,11 @@ export default function EventsListing() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     fetchMeetups();
-  }, []);
+  }, [fetchMeetups]);
 
   useEffect(() => {
     try {
@@ -302,10 +309,10 @@ export default function EventsListing() {
                 <div className="group rounded-xl overflow-hidden border border-gray-200 transition-all cursor-pointer bg-white hover:shadow-sm">
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
-                      src={event.imageUrl || "/placeholder.svg?height=400&width=600"}
+                      src={event.imageUrl || "/images/hero.avif"}
                       alt={event.eventName}
                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                      onError={(e) => { e.currentTarget.src = "/placeholder.svg?height=400&width=600"; }}
+                      onError={(e) => { e.currentTarget.src = "/images/hero.avif"; }}
                     />
                     <button
                       onClick={(e) => { e.preventDefault(); setSavedIds((prev) => prev.includes(event.eventId) ? prev.filter(id => id !== event.eventId) : [...prev, event.eventId]); }}

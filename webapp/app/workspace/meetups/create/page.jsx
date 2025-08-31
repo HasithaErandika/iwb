@@ -84,10 +84,10 @@ export default function CreateMeetupPage() {
       });
 
       if (imageFile) {
-        formDataToSend.append("photo", imageFile);
+        formDataToSend.append("image", imageFile);
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/meetups`, {
+      const response = await fetch(`${API_BASE_URL}/event/create`, {
         method: "POST",
         headers: getAuthHeaders(session),
         body: formDataToSend,

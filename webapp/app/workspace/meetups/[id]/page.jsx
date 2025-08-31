@@ -421,13 +421,13 @@ export default function MeetupDetailsPage({ params: paramsPromise }) {
               <div className="relative overflow-hidden rounded-2xl">
                 <img
                   src={
-                    meetup.imageUrl || "/placeholder.svg?height=400&width=600"
+                    meetup.imageUrl || "/images/hero.avif"
                   }
                   alt={meetup.eventName}
                   className="w-full h-72 object-cover"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "/placeholder.svg?height=400&width=600";
+                      "/images/hero.avif";
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

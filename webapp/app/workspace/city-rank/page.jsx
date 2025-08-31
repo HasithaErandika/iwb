@@ -64,7 +64,7 @@ export default function CityRankPage() {
     return (
         <div className="min-h-screen bg-background">
             <div className="container mx-auto px-8 py-6">
-                <div className="mb-8 text-left">
+                <div className="mb-8 pt-3 text-left">
                     <h1 className="text-3xl font-semibold tracking-tight text-black">Where Should You Be in Sri Lanka? 🤔</h1>
                     <p className="text-gray-600 mt-1">Discover cities through community rankings, ratings, and hidden stories..</p>
 
