@@ -29,7 +29,7 @@ import {
     IconMapSearch,
     IconLocationPin,
     IconNavigationShare,
-    IconSquareRoundedPercentage
+    IconSquareRoundedPercentage,
     IconUsersPlus,
     IconSmartHome,
     IconBuildingBank,
@@ -81,7 +81,7 @@ const data = {
             title: "Meetups",
             url: "/workspace/meetups",
             icon: IconDeviceIpadPin
-            icon: IconSmartHome
+            
         },
         {
             title: "City Rank",
@@ -107,7 +107,7 @@ const data = {
             title: "Places",
             url: "/workspace/places",
             icon: IconBuildingBank
-            icon: IconBuildingBank
+            
         }
     ],
 }
