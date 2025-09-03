@@ -165,7 +165,7 @@ export function WorkspaceWidgets() {
                 try {
                     setNewsLoading(true);
                     setNewsError(null);
-                    const news = await fetchLatestNews(session);
+                    const news = await fetchLatestNews();
                     setNewsData(news);
                 } catch (error) {
                     console.error('Failed to fetch news:', error);

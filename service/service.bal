@@ -258,17 +258,6 @@ service / on new http:Listener(port) {
         return result.toJson();
     }
 
-    // latest news from newswire.lk (lightweight HTML scrape)
-    isolated resource function get api/latest-news(int limit = 5) returns json|http:InternalServerError {
-        json|error result = getLatestNewsFromNewswire(limit);
-        if result is error {
-            return <http:InternalServerError>{
-                body: {success: false, message: "Error fetching latest news: " + result.message()}
-            };
-        }
-        return result;
-    }
-
     //places api
 
     isolated resource function post api/places(http:Request req) returns json|http:BadRequest|http:InternalServerError {

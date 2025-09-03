@@ -1,9 +1,7 @@
 import { getAuthHeaders } from "./api";
 
-export async function fetchLatestNews(session){
-    const res = await fetch("http://localhost:8080/api/latest-news", {
-        headers: getAuthHeaders(session)
-    })
+export async function fetchLatestNews(){
+    const res = await fetch("http://localhost:5000/latest-news")
     if(!res.ok) throw new Error("failed to fetch news")
     return res.json()
 }
