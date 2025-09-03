@@ -19,13 +19,13 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata = {
-  title: "The Cinnamon Circle",
+  title: "Nomad Page",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased`}
       >
         <SessionProvider>{children}</SessionProvider>

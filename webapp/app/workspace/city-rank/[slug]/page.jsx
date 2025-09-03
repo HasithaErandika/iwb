@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,8 +16,9 @@ import { getAuthHeaders } from "@/lib/api"
 // Cities data - initially empty, will be populated by user additions
 const sriLankanCities = []
 
-export default function CityDetailPage({ params }) {
+export default function CityDetailPage() {
     const router = useRouter()
+    const params = useParams()
     const [activeTab, setActiveTab] = useState("overview")
     const [city, setCity] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -26,6 +27,7 @@ export default function CityDetailPage({ params }) {
     useEffect(() => {
         const fetchCity = async () => {
             try {
+                if (!params?.slug) return
                 const res = await fetch(`http://localhost:8080/api/cities/${params.slug}`, { cache: 'no-store', headers: { ...getAuthHeaders(session) } })
                 const data = await res.json()
                 if (data?.success && data.data) {
@@ -41,8 +43,14 @@ export default function CityDetailPage({ params }) {
                         images: Array.isArray(c.imageUrls) ? c.imageUrls : [],
                         image: Array.isArray(c.imageUrls) && c.imageUrls.length > 0 ? c.imageUrls[0] : "/placeholder.svg",
                         amenities: Array.isArray(c.amenities) ? c.amenities : [],
-                        population: c.population ?? 0,
-                        temperature: c.temperature ?? 0,
+                        population: c.population ?? c.pop ?? 0,
+                        temperature: c.temperature ?? c.avgTemp ?? 0,
+                        costOfLiving: c.costOfLiving ?? c.cost_of_living ?? c.cost ?? null,
+                        internetSpeed: c.internetSpeed ?? c.internet_speed ?? c.internet ?? null,
+                        qualityOfLife: c.qualityOfLife ?? c.quality_of_life ?? null,
+                        safety: c.safety ?? c.safety_index ?? null,
+                        entertainment: c.entertainment ?? c.fun ?? null,
+                        walkability: c.walkability ?? c.walk_score ?? null,
                         ratingsBreakdown: c.ratingsBreakdown || {},
                     }
                     setCity(mapped)
@@ -58,7 +66,7 @@ export default function CityDetailPage({ params }) {
         }
 
         fetchCity()
-    }, [params.slug])
+    }, [params?.slug, session])
 
     if (loading) {
         return (

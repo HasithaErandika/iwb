@@ -101,6 +101,7 @@ export default function HomeClient({ session }) {
                   src="/images/hero.avif"
                   alt="Paradise landscape"
                   fill
+                  sizes="(max-width: 1024px) 24rem, 500px"
                   className="object-cover rounded-lg"
                   priority
                 />
