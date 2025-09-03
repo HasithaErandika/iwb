@@ -35,6 +35,7 @@ import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import { useSession } from "next-auth/react"
 import {
     Sidebar,
     SidebarContent,
@@ -47,11 +48,6 @@ import {
 import { CalendarDays } from "lucide-react"
 
 const data = {
-    user: {
-        name: "Hasitha Erandika",
-        email: "wickramasinghe.erandika@gmail.com",
-        avatar: "/avatars/shadcn.jpg"
-    },
     navMain: [
         {
             title: "Home",
@@ -87,6 +83,14 @@ const data = {
 }
 
 export function AppSidebar({ ...props }) {
+    const { data: session } = useSession()
+    const userFromSession = React.useMemo(() => ({
+        name: session?.user?.given_name && session?.user?.family_name
+            ? `${session.user.given_name} ${session.user.family_name}`
+            : (session?.user?.name || session?.user?.email || "User"),
+        email: session?.user?.email || session?.user?.username || "",
+        avatar: session?.user?.image || session?.user?.picture || ""
+    }), [session])
     return (
         <Sidebar collapsible="offcanvas" {...props}>
             <SidebarHeader>
@@ -96,7 +100,7 @@ export function AppSidebar({ ...props }) {
                             asChild
                             className="data-[slot=sidebar-menu-button]:!p-2  mb-3">
                             <a href="#">
-                                <span className="text-xl font-semibold">The Cinnamon Circle</span>
+                                <span className="text-xl font-semibold">Nomad Page</span>
                             </a>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -106,7 +110,7 @@ export function AppSidebar({ ...props }) {
                 <NavMain items={data.navMain} />
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={data.user} />
+                <NavUser user={userFromSession} />
             </SidebarFooter>
         </Sidebar>
     )
