@@ -52,6 +52,11 @@ export default function IncidentMapPage() {
 
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
         map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right')
+        map.current.addControl(new mapboxgl.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: true,
+            showUserHeading: true,
+        }), 'top-right')
         map.current.on('dblclick', (e) => {
             e.preventDefault()
             const { lng, lat } = e.lngLat

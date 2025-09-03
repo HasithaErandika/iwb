@@ -20,19 +20,19 @@ const getCityData = (selectedCity) => ({
         },
         {
             label: "Internet Speed",
-            value: selectedCity?.internetSpeed || "N/A",
+            value: selectedCity?.internetSpeed ? `${selectedCity.internetSpeed} Mbps` : "N/A",
             color: "bg-green-500",
             icon: Wifi
         },
         {
             label: "Quality of Life",
-            value: selectedCity?.qualityOfLife || "N/A",
+            value: selectedCity?.qualityOfLife ? `${selectedCity.qualityOfLife}/10` : "N/A",
             color: "bg-green-500",
             icon: Coffee
         },
         {
             label: "Safety",
-            value: selectedCity?.safety || "N/A",
+            value: selectedCity?.safety ? `${selectedCity.safety}/10` : "N/A",
             color: "bg-green-500",
             icon: Users
         },
@@ -50,13 +50,13 @@ const getCityData = (selectedCity) => ({
         },
         {
             label: "Fun & Entertainment",
-            value: selectedCity?.entertainment || "N/A",
+            value: selectedCity?.entertainment ? `${selectedCity.entertainment}/10` : "N/A",
             color: "bg-green-500",
             icon: Heart
         },
         {
             label: "Walkability",
-            value: selectedCity?.walkability || "N/A",
+            value: selectedCity?.walkability ? `${selectedCity.walkability}/100` : "N/A",
             color: "bg-yellow-500",
             icon: MapPin
         },

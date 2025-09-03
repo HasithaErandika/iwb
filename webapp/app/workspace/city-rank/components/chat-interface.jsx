@@ -11,7 +11,7 @@ import { Send, Loader2, Wifi, WifiOff } from "lucide-react"
 import { getAuthHeaders } from "@/lib/api"
 
 const API_BASE_URL = "http://localhost:8080";
-const WS_BASE_URL = "ws://localhost:9090/chat";
+const WS_BASE_URL = "ws://localhost:9090";
 
 export default function ChatInterface({ cityId, userId = "guest-user", userName = "Guest" }) {
     const { data: session } = useSession();
