@@ -7,5 +7,11 @@ export async function signInAction() {
 }
 
 export async function signUpAction() {
-  await signIn("asgardeo", { redirectTo: "/workspace" });
+  await signIn("asgardeo", {
+    redirectTo: "/workspace",
+    // Hints for the IdP to open the registration screen
+    screen_hint: "signup",
+    action: "register",
+    prompt: "login",
+  });
 }
