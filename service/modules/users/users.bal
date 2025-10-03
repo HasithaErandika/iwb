@@ -16,6 +16,9 @@ public isolated function createOrUpdateUser(UserCreateRequest userRequest) retur
             mobileNumber: userRequest?.mobileNumber,
             birthdate: userRequest?.birthdate,
             bio: existingUser?.bio,
+            cityName: userRequest?.cityName,
+            cityLatitude: userRequest?.cityLatitude,
+            cityLongitude: userRequest?.cityLongitude,
             updatedAt: currentTime
         };
 
@@ -41,6 +44,9 @@ public isolated function createOrUpdateUser(UserCreateRequest userRequest) retur
             country: userRequest?.country,
             mobileNumber: userRequest?.mobileNumber,
             birthdate: userRequest?.birthdate,
+            cityName: userRequest?.cityName,
+            cityLatitude: userRequest?.cityLatitude,
+            cityLongitude: userRequest?.cityLongitude,
             createdAt: currentTime,
             updatedAt: currentTime
         };
@@ -75,6 +81,10 @@ public isolated function updateUserProfile(string userId, UserUpdateRequest upda
         mobileNumber: updateRequest?.mobileNumber ?: existingUser.mobile_number,
         birthdate: updateRequest?.birthdate ?: existingUser.birthdate,
         bio: updateRequest?.bio ?: existingUser.bio,
+        cityName: updateRequest?.cityName ?: existingUser.city_name,
+        cityLatitude: updateRequest?.cityLatitude ?: existingUser.city_latitude,
+        cityLongitude: updateRequest?.cityLongitude ?: existingUser.city_longitude,
+
         updatedAt: currentTime
     };
 
@@ -128,6 +138,9 @@ isolated function mapUserRecordToUser(UserRecord userRecord) returns User {
         mobileNumber: userRecord.mobile_number,
         birthdate: userRecord.birthdate,
         bio: userRecord.bio,
+        cityName: userRecord.city_name,
+        cityLatitude: userRecord.city_latitude,
+        cityLongitude: userRecord.city_longitude,
         createdAt: userRecord.created_at,
         updatedAt: userRecord.updated_at
     };
