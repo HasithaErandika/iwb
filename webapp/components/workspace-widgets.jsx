@@ -223,7 +223,7 @@ export function WorkspaceWidgets() {
 
 
     return (
-        <div className="px-8 pb-8">
+        <div className="px-8 pb-8 bg-background">
             <div className="max-w-7xl mx-auto grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2 xl:grid-cols-12">
                 {/* Currency converter */}
                 <Card className="rounded-2xl md:col-span-2 xl:col-span-6 shadow-none h-[280px] overflow-hidden">
@@ -364,9 +364,9 @@ export function WorkspaceWidgets() {
                 </Card>
 
                 {/* Emergency contacts (replaces Visa Stay Calculator) */}
-                <Card className="rounded-2xl bg-gradient-to-r from-red-50 to-red-50 border border-red-200 md:col-span-1 xl:col-span-3 h-[280px] shadow-none overflow-hidden">
+                <Card className="rounded-2xl md:col-span-1 xl:col-span-3 h-[280px] shadow-none overflow-hidden">
                     <CardHeader className="pb-0 pt-1 gap-0">
-                        <CardTitle className="text-lg text-red-600">Emergency Contacts</CardTitle>
+                        <CardTitle className="text-lg">Emergency Contacts</CardTitle>
                     </CardHeader>
                     <CardContent className="w-full h-full -mt-1 flex flex-col gap-1 text-sm">
                         <div className="grid grid-cols-1 gap-1.5 flex-1 min-h-0 overflow-y-auto pb-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -400,9 +400,9 @@ export function WorkspaceWidgets() {
                                     number: "011-2422222"
                                 }
                             ].map(contact => (
-                                <div key={contact.number} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                    <span className="font-medium">{contact.name}</span>
-                                    <a className="text-red-600 font-semibold" href={`tel:${contact.number}`}>{contact.number}</a>
+                                <div key={contact.number} className="flex items-center justify-between rounded-lg border px-3 py-2 bg-card">
+                                    <span className="font-medium text-foreground">{contact.name}</span>
+                                    <a className="text-primary font-semibold" href={`tel:${contact.number}`}>{contact.number}</a>
                                 </div>
                             ))}
                         </div>
@@ -413,9 +413,9 @@ export function WorkspaceWidgets() {
                 {/* Time Zone Converter (replaces SIM comparator) */}
                 <Card className="rounded-2xl  md:col-span-1 lg:col-span-2 xl:col-span-4 h-[280px] shadow-none overflow-hidden">
                     <CardContent className="space-y-3 h-full flex flex-col">
-                        <CardTitle className="text-xl font-semibold text-gray-800">Time Zone Converter</CardTitle>
+                        <CardTitle className="text-xl font-semibold text-foreground">Time Zone Converter</CardTitle>
 
-                        <div className="mt-1 rounded-xl border bg-gradient-to-r from-blue-50 to-purple-50 px-3 py-2">
+                        <div className="mt-1 rounded-xl border bg-muted px-3 py-2">
                             <div className="grid grid-cols-12 items-end">
                                 <div className="col-span-5">
                                     <div className="text-xs text-muted-foreground">{zoneDisplayName(fromTimeZone)} · {humanOffset(now, fromTimeZone)}</div>
@@ -437,7 +437,7 @@ export function WorkspaceWidgets() {
 
                         <div className="grid grid-cols-12 gap-3">
                             <div className="col-span-5">
-                                <Label className="text-xs font-medium text-gray-600 mb-1 block">From</Label>
+                                <Label className="text-xs font-medium text-muted-foreground mb-1 block">From</Label>
                                 <Select value={fromTimeZone} onValueChange={setFromTimeZone}>
                                     <SelectTrigger className="h-10 w-full rounded-xl border-2 text-sm">
                                         <SelectValue placeholder="From time zone" />
@@ -459,7 +459,7 @@ export function WorkspaceWidgets() {
                                 </Button>
                             </div>
                             <div className="col-span-5">
-                                <Label className="text-xs font-medium text-gray-600 mb-1 block">To</Label>
+                                <Label className="text-xs font-medium text-muted-foreground mb-1 block">To</Label>
                                 <Select value={toTimeZone} onValueChange={setToTimeZone}>
                                     <SelectTrigger className="h-10 w-full rounded-xl border-2 text-sm">
                                         <SelectValue placeholder="To time zone" />
@@ -498,15 +498,15 @@ export function WorkspaceWidgets() {
                 </Card>
 
                 {/* Simple card to replace calendar */}
-                <Card className="rounded-2xl border-gray-200 md:col-span-1 lg:col-span-1 shadow-none xl:col-span-3 h-[280px] overflow-hidden">
+                <Card className="rounded-2xl md:col-span-1 lg:col-span-1 shadow-none xl:col-span-3 h-[280px] overflow-hidden">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-lg">Quick Info</CardTitle>
                         <CardDescription>Important updates and reminders</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <div className="rounded-lg bg-blue-50 border border-blue-200 p-2">
-                            <div className="text-xs font-medium text-blue-900">Today's Date</div>
-                            <div className="text-sm font-semibold text-blue-700">
+                        <div className="rounded-lg bg-muted border p-2">
+                            <div className="text-xs font-medium text-foreground">Today's Date</div>
+                            <div className="text-sm font-semibold text-foreground">
                                 {new Date().toLocaleDateString('en-US', {
                                     weekday: 'short',
                                     month: 'short',
@@ -514,9 +514,9 @@ export function WorkspaceWidgets() {
                                 })}
                             </div>
                         </div>
-                        <div className="rounded-lg bg-green-50 border border-green-200 p-2">
-                            <div className="text-xs font-medium text-green-900">Local Time</div>
-                            <div className="text-sm font-semibold text-green-700">
+                        <div className="rounded-lg bg-muted border p-2">
+                            <div className="text-xs font-medium text-foreground">Local Time</div>
+                            <div className="text-sm font-semibold text-foreground">
                                 {new Date().toLocaleTimeString('en-US', {
                                     hour: '2-digit',
                                     minute: '2-digit'
@@ -526,7 +526,7 @@ export function WorkspaceWidgets() {
                     </CardContent>
                 </Card>
 
-                <Card className="rounded-2xl border-gray-200 shadow-none md:col-span-2 lg:col-span-3 xl:col-span-5 h-[280px] overflow-hidden">
+                <Card className="rounded-2xl shadow-none md:col-span-2 lg:col-span-3 xl:col-span-5 h-[280px] overflow-hidden">
 
                     <CardContent className="h-full flex flex-col">
                         {newsLoading && (
@@ -544,8 +544,8 @@ export function WorkspaceWidgets() {
                         {!newsLoading && !newsError && (
                             <div className="grid grid-cols-1 gap-3 flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                                 {newsData.map((item, idx) => (
-                                    <div key={idx} className="rounded-xl border p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200">
-                                        <div className="text-base font-semibold leading-snug line-clamp-2">
+                                    <div key={idx} className="rounded-xl border p-3 bg-card">
+                                        <div className="text-base font-semibold leading-snug line-clamp-2 text-foreground">
                                             {item.title}
                                         </div>
                                         <div className="mt-1 text-xs text-muted-foreground">

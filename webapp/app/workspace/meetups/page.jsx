@@ -168,16 +168,16 @@ export default function EventsListing() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold tracking-tight text-black">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
-            <p className="text-gray-600 mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
+            <p className="text-muted-foreground mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
           </div>
           <div className="flex items-center justify-center min-h-72">
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading meetups...</p>
+              <p className="text-muted-foreground">Loading meetups...</p>
             </div>
           </div>
         </div>
@@ -187,15 +187,15 @@ export default function EventsListing() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold tracking-tight text-black">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
-            <p className="text-gray-600 mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
+            <p className="text-muted-foreground mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
           </div>
-          <Alert className="border-red-200 bg-red-50 mb-6">
+          <Alert className="mb-6">
             <XCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
+            <AlertDescription>
               {error}
             </AlertDescription>
           </Alert>
@@ -208,15 +208,15 @@ export default function EventsListing() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-black">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
-            <p className="text-gray-600 mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
+            <p className="text-muted-foreground mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
           </div>
           <Link href="/workspace/meetups/create">
-            <Button className="bg-indigo-500 text-white hover:bg-indigo-600">
+            <Button>
               <Plus className="h-4 w-4 mr-2" />
               Create Meetup
             </Button>
@@ -225,18 +225,18 @@ export default function EventsListing() {
 
         <div className="mb-6 flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               type="text"
               placeholder="Search by title, location, or host"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-9 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+              className="pl-10 h-9"
             />
           </div>
           <Sheet open={isFiltersOpen} onOpenChange={(open) => !open && setIsFiltersOpen(false)}>
             <SheetTrigger asChild>
-              <Button className="h-9 px-4 bg-indigo-500 text-white hover:bg-indigo-600" onClick={() => setIsFiltersOpen(true)}>
+              <Button className="h-9 px-4" onClick={() => setIsFiltersOpen(true)}>
                 Advanced Filters
               </Button>
             </SheetTrigger>
@@ -248,7 +248,7 @@ export default function EventsListing() {
                 } overflow-hidden flex flex-col [&>button]:hidden`}
             >
               <div className="absolute right-3 top-3 z-50">
-                <Button variant="ghost" size="icon" onClick={() => setIsFiltersOpen(false)} className="h-8 w-8 rounded-full hover:bg-gray-100">
+                <Button variant="ghost" size="icon" onClick={() => setIsFiltersOpen(false)} className="h-8 w-8 rounded-full">
                   <X className="h-4 w-4" />
                   <span className="sr-only">Close</span>
                 </Button>
@@ -258,9 +258,9 @@ export default function EventsListing() {
               </SheetHeader>
               <div className="flex flex-col gap-3">
                 <div className="w-full sm:max-w-xs">
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Date</label>
+                  <label className="text-sm font-medium text-foreground/80 mb-1 block">Date</label>
                   <Select value={dateFilter} onValueChange={setDateFilter}>
-                    <SelectTrigger aria-label="Date" className="h-9 border-gray-200 text-sm w-full">
+                    <SelectTrigger aria-label="Date" className="h-9 text-sm w-full">
                       <SelectValue placeholder="Any time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -271,9 +271,9 @@ export default function EventsListing() {
                   </Select>
                 </div>
                 <div className="w-full sm:max-w-xs">
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Location</label>
+                  <label className="text-sm font-medium text-foreground/80 mb-1 block">Location</label>
                   <Select value={selectedCity} onValueChange={setSelectedCity}>
-                    <SelectTrigger aria-label="Location" className="h-9 border-gray-200 text-sm w-full">
+                    <SelectTrigger aria-label="Location" className="h-9 text-sm w-full">
                       <SelectValue placeholder="All locations" />
                     </SelectTrigger>
                     <SelectContent>
@@ -288,7 +288,7 @@ export default function EventsListing() {
               <SheetFooter className="mt-6 flex flex-col gap-2 px-4 sm:px-0">
                 <Button variant="ghost" className="w-full sm:max-w-xs" onClick={() => { setSelectedCity("all"); setDateFilter("all"); }}>Clear</Button>
                 <SheetClose asChild>
-                  <Button className="bg-black text-white hover:bg-neutral-900 w-full sm:max-w-xs">Apply</Button>
+                  <Button className="w-full sm:max-w-xs">Apply</Button>
                 </SheetClose>
               </SheetFooter>
             </SheetContent>
@@ -306,7 +306,7 @@ export default function EventsListing() {
                 key={event.eventId}
                 href={`/workspace/meetups/${event.eventId}`}
               >
-                <div className="group rounded-xl overflow-hidden border border-gray-200 transition-all cursor-pointer bg-white hover:shadow-sm">
+                <div className="group rounded-xl overflow-hidden border transition-all cursor-pointer bg-card hover:shadow-sm">
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
                       src={event.imageUrl || "/images/hero.avif"}
@@ -317,28 +317,28 @@ export default function EventsListing() {
                     <button
                       onClick={(e) => { e.preventDefault(); setSavedIds((prev) => prev.includes(event.eventId) ? prev.filter(id => id !== event.eventId) : [...prev, event.eventId]); }}
                       aria-label="Save meetup"
-                      className="absolute top-3 right-3 inline-flex items-center justify-center h-9 w-9 rounded-full bg-white/90 text-black shadow-sm hover:bg-white"
+                      className="absolute top-3 right-3 inline-flex items-center justify-center h-9 w-9 rounded-full bg-background/90 text-foreground shadow-sm"
                     >
                       <Heart className={`h-5 w-5 ${savedIds.includes(event.eventId) ? "fill-red-500 text-red-500" : ""}`} />
                     </button>
                   </div>
                   <div className="p-3">
-                    <h3 className="font-medium text-[15px] text-black truncate">{event.eventName}</h3>
-                    <p className="text-[13px] text-gray-600 truncate">{event.venueName}</p>
-                    <p className="text-[13px] text-gray-600 mt-1">{formatDisplayDate(event.eventStartDate)} • {time}</p>
+                    <h3 className="font-medium text-[15px] text-foreground truncate">{event.eventName}</h3>
+                    <p className="text-[13px] text-muted-foreground truncate">{event.venueName}</p>
+                    <p className="text-[13px] text-muted-foreground mt-1">{formatDisplayDate(event.eventStartDate)} • {time}</p>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {event.isPaidEvent && (
-                        <Badge variant="secondary" className="text-[11px] bg-green-100 text-green-800">
+                        <Badge variant="secondary" className="text-[11px]">
                           {formatCurrency(event.eventCost)}
                         </Badge>
                       )}
                       {event.hasLimitedCapacity && (
-                        <Badge variant="secondary" className="text-[11px] bg-orange-100 text-orange-800">
+                        <Badge variant="secondary" className="text-[11px]">
                           Limited ({event.eventCapacity} max)
                         </Badge>
                       )}
                       {event.requireApproval && (
-                        <Badge variant="secondary" className="text-[11px] bg-blue-100 text-blue-800">
+                        <Badge variant="secondary" className="text-[11px]">
                           Approval Required
                         </Badge>
                       )}
@@ -352,7 +352,7 @@ export default function EventsListing() {
 
         {filteredEvents.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               No meetups found matching your criteria.
             </p>
             {(searchTerm !== "" ||

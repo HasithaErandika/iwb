@@ -7,6 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import ModeToggle from "@/components/mode-toggle"
 import {
     Breadcrumb,
     BreadcrumbList,
@@ -102,10 +103,13 @@ export function SiteHeader() {
                     </BreadcrumbList>
                 </Breadcrumb>
                 <div className="ml-auto flex items-center gap-2">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200">
-                        <span className="text-sm font-medium text-gray-700">
-                            Hi, {getUserDisplayName()} 👋
-                        </span>
+                    <div className="hidden md:flex items-center gap-2">
+                        <ModeToggle />
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted">
+                            <span className="text-sm font-medium text-foreground">
+                                Hi, {getUserDisplayName()} 👋
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

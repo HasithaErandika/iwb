@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useTheme } from 'next-themes'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Card } from '@/components/ui/card'
@@ -21,6 +22,7 @@ export default function IncidentMapPage() {
     const map = useRef(null)
     const [selectedIncident, setSelectedIncident] = useState(null)
     const { data: session } = useSession()
+    const { resolvedTheme } = useTheme()
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [popoverOpen, setPopoverOpen] = useState(false)
     const [popoverIncident, setPopoverIncident] = useState(null)
@@ -43,9 +45,10 @@ export default function IncidentMapPage() {
 
         if (!mapContainer.current) return
 
+        const styleId = resolvedTheme === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12'
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
-            style: 'mapbox://styles/mapbox/streets-v12',
+            style: styleId,
             center: [79.8612, 6.9271],
             zoom: 12
         })
@@ -72,7 +75,32 @@ export default function IncidentMapPage() {
                 map.current = null
             }
         }
-    }, [])
+    }, [resolvedTheme])
+
+    // Update map style when theme changes (after map is initialized)
+    useEffect(() => {
+        if (!map.current) return
+        const targetStyle = resolvedTheme === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12'
+
+        const updateStyleIfNeeded = () => {
+            try {
+                const sprite = map.current?.getStyle()?.sprite || ''
+                const isDarkLoaded = sprite.includes('dark')
+                const wantDark = resolvedTheme === 'dark'
+                if ((wantDark && !isDarkLoaded) || (!wantDark && isDarkLoaded)) {
+                    map.current.setStyle(targetStyle)
+                }
+            } catch (_) {
+                // getStyle can throw if style not ready; ignore here
+            }
+        }
+
+        if (!map.current.isStyleLoaded()) {
+            map.current.once('load', updateStyleIfNeeded)
+        } else {
+            updateStyleIfNeeded()
+        }
+    }, [resolvedTheme])
 
     const addIncidentMarkers = useCallback(() => {
         if (!map.current) return
@@ -125,6 +153,23 @@ export default function IncidentMapPage() {
             map.current.on('style.load', addIncidentMarkers)
         }
     }, [incidents, addIncidentMarkers])
+
+    // Keep map responsive to container size changes (e.g., sidebar collapse)
+    useEffect(() => {
+        if (!mapContainer.current || !map.current) return
+        const resize = () => {
+            try { map.current?.resize() } catch (_) { }
+        }
+        // Handle window resizes
+        window.addEventListener('resize', resize)
+        // Handle container resizes
+        const ro = new ResizeObserver(resize)
+        ro.observe(mapContainer.current)
+        return () => {
+            window.removeEventListener('resize', resize)
+            ro.disconnect()
+        }
+    }, [])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -183,27 +228,27 @@ export default function IncidentMapPage() {
 
                 {/* Loading overlay for incidents */}
                 {showLoadingOverlay && (
-                    <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                    <div className="absolute inset-0 bg-background/75 flex items-center justify-center z-10">
                         <div className="flex items-center gap-2">
                             <Loader2 className="h-6 w-6 animate-spin" />
-                            <span>Loading incidents...</span>
+                            <span className="text-foreground">Loading incidents...</span>
                         </div>
                     </div>
                 )}
 
                 {/* Error overlay for incidents */}
                 {error && (
-                    <div className="absolute top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-3 z-10 max-w-sm">
+                    <div className="absolute top-4 right-4 bg-card border rounded-lg p-3 z-10 max-w-sm">
                         <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-red-500" />
-                            <p className="text-red-600 text-sm">Error loading incidents: {error}</p>
+                            <AlertTriangle className="h-4 w-4 text-destructive" />
+                            <p className="text-sm text-foreground">Error loading incidents: {error}</p>
                         </div>
                     </div>
                 )}
 
                 {popoverOpen && popoverIncident && (
                     <div
-                        className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80"
+                        className="absolute z-50 bg-card border rounded-lg shadow-lg p-4 w-80"
                         style={{
                             left: `${popoverPosition.x}px`,
                             top: `${popoverPosition.y}px`,
@@ -218,16 +263,16 @@ export default function IncidentMapPage() {
                                 </div>
                                 <button
                                     onClick={() => setPopoverOpen(false)}
-                                    className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-colors"
+                                    className="p-1 rounded-md transition-colors"
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
                             </div>
                             <div className="text-sm">
-                                <p className="font-medium text-gray-900">{popoverIncident.incidentType}</p>
-                                <p className="text-gray-600 mt-1">{popoverIncident.description}</p>
+                                <p className="font-medium text-foreground">{popoverIncident.incidentType}</p>
+                                <p className="text-muted-foreground mt-1">{popoverIncident.description}</p>
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-muted-foreground">
                                 {new Date(popoverIncident.reportedAt).toLocaleDateString()} at {new Date(popoverIncident.reportedAt).toLocaleTimeString()}
                             </div>
                         </div>
@@ -242,21 +287,21 @@ export default function IncidentMapPage() {
                         <h1 className="font-semibold text-lg mb-4">Active Incidents</h1>
 
                         <div className="space-y-2 mb-4">
-                            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                                <div className="text-sm font-medium text-red-800">Power Cut</div>
-                                <div className="text-lg font-bold text-red-600">{totalCounts.power_cut}</div>
+                            <div className="rounded-md p-3 border">
+                                <div className="text-sm font-medium">Power Cut</div>
+                                <div className="text-lg font-bold">{totalCounts.power_cut}</div>
                             </div>
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                                <div className="text-sm font-medium text-yellow-800">Traffic Jam</div>
-                                <div className="text-lg font-bold text-yellow-600">{totalCounts.traffic_jam}</div>
+                            <div className="rounded-md p-3 border">
+                                <div className="text-sm font-medium">Traffic Jam</div>
+                                <div className="text-lg font-bold">{totalCounts.traffic_jam}</div>
                             </div>
-                            <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
-                                <div className="text-sm font-medium text-orange-800">Safety Issue</div>
-                                <div className="text-lg font-bold text-orange-600">{totalCounts.safety_issue}</div>
+                            <div className="rounded-md p-3 border">
+                                <div className="text-sm font-medium">Safety Issue</div>
+                                <div className="text-lg font-bold">{totalCounts.safety_issue}</div>
                             </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
-                                <div className="text-sm font-medium text-gray-800">Other</div>
-                                <div className="text-lg font-bold text-gray-600">{totalCounts.other}</div>
+                            <div className="rounded-md p-3 border">
+                                <div className="text-sm font-medium">Other</div>
+                                <div className="text-lg font-bold">{totalCounts.other}</div>
                             </div>
                         </div>
                     </div>
@@ -270,7 +315,7 @@ export default function IncidentMapPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => setIsDialogOpen(false)}
-                            className="h-8 w-8 rounded-full hover:bg-gray-100"
+                            className="h-8 w-8 rounded-full"
                             disabled={isSubmitting}
                         >
                             <X className="h-4 w-4" />
@@ -339,7 +384,7 @@ export default function IncidentMapPage() {
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
                                 Cancel
                             </Button>
-                            <Button className="bg-indigo-500 hover:bg-indigo-600" type="submit" disabled={isSubmitting}>
+                            <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />

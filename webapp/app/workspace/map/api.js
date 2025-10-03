@@ -67,6 +67,28 @@ export async function getIncidentById(incidentId,session) {
     }
 }
 
+export async function updateUserLocation(userId, location, session) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(session)
+      },
+      body: JSON.stringify(location)
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error updating user location:", error)
+    throw error
+  }
+}
+
 export function createIncidentWebSocket() {
     return new WebSocket(`${WS_BASE_URL}/incidents`);
 }

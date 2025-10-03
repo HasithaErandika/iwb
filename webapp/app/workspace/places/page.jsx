@@ -217,13 +217,13 @@ export default function CoworkingPlacesPage() {
     return (
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Find the Perfect Desk, Anywhere You Go</h1>
-          <p className="text-gray-600 mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
+          <h1 className="text-2xl font-semibold text-foreground">Find the Perfect Desk, Anywhere You Go</h1>
+          <p className="text-muted-foreground mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
         </div>
         <div className="flex items-center justify-center min-h-72">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading places...</p>
+            <p className="text-muted-foreground">Loading places...</p>
           </div>
         </div>
       </div>
@@ -234,12 +234,12 @@ export default function CoworkingPlacesPage() {
     return (
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Find the Perfect Desk, Anywhere You Go</h1>
-          <p className="text-gray-600 mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
+          <h1 className="text-2xl font-semibold text-foreground">Find the Perfect Desk, Anywhere You Go</h1>
+          <p className="text-muted-foreground mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
         </div>
-        <Alert className="border-red-200 bg-red-50 mb-6">
+        <Alert className="mb-6">
           <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
+          <AlertDescription>
             {error}
           </AlertDescription>
         </Alert>
@@ -255,17 +255,17 @@ export default function CoworkingPlacesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-foreground">
             Find the Perfect Desk, Anywhere You Go
           </h1>
-          <p className="text-gray-600 mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
+          <p className="text-muted-foreground mt-1">Compare and choose co-working spaces that make working away from home effortless.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             {filteredPlaces.length} spaces available
           </div>
           <Link href="/workspace/places/create">
-            <Button className="text-white bg-indigo-600 hover:bg-indigo-700">
+            <Button>
               Add New Space
             </Button>
           </Link>
@@ -275,17 +275,17 @@ export default function CoworkingPlacesPage() {
       {/* Search and Filters Bar */}
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search spaces..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white border-gray-200"
+            className="pl-10"
           />
         </div>
 
         <Select value={selectedDuration} onValueChange={setSelectedDuration}>
-          <SelectTrigger className="w-32 bg-white border-gray-200">
+          <SelectTrigger className="w-32">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -299,14 +299,11 @@ export default function CoworkingPlacesPage() {
 
         <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
           <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              className="bg-white border-gray-200 relative"
-            >
+            <Button variant="outline" className="relative">
               <SlidersHorizontal className="h-4 w-4 mr-2" />
               Filters
               {activeFiltersCount > 0 && (
-                <Badge className="ml-2 h-5 w-5 p-0 text-xs bg-blue-600 text-white rounded-full flex items-center justify-center">
+                <Badge className="ml-2 h-5 w-5 p-0 text-xs rounded-full flex items-center justify-center">
                   {activeFiltersCount}
                 </Badge>
               )}
@@ -328,7 +325,7 @@ export default function CoworkingPlacesPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsFilterOpen(false)}
-                className="h-8 w-8 rounded-full hover:bg-gray-100"
+                className="h-8 w-8 rounded-full"
               >
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
@@ -341,7 +338,7 @@ export default function CoworkingPlacesPage() {
             <div className="px-4 pt-2 pb-4 space-y-6">
               {/* Budget Filter */}
               <div className="space-y-4">
-                <label className="block text-md font-medium text-gray-700">
+                <label className="block text-md font-medium">
                   Budget Range: ${budgetRange[0]} - ${budgetRange[1]} per{" "}
                   {selectedDuration.replace("ly", "")}
                 </label>
@@ -361,7 +358,7 @@ export default function CoworkingPlacesPage() {
 
               {/* Workspace Type */}
               <div className="space-y-4">
-                <label className="block text-md font-medium text-gray-700">
+                <label className="block text-md font-medium">
                   Workspace Type
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -385,7 +382,7 @@ export default function CoworkingPlacesPage() {
 
               {/* Amenities */}
               <div className="space-y-4">
-                <label className="block text-md font-medium text-gray-700">
+                <label className="block text-md font-medium">
                   Amenities
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -440,46 +437,35 @@ export default function CoworkingPlacesPage() {
       {/* Active Filters Display */}
       {activeFiltersCount > 0 && (
         <div className="flex items-center space-x-2 flex-wrap">
-          <span className="text-sm text-gray-600">Active filters:</span>
+          <span className="text-sm text-muted-foreground">Active filters:</span>
           {selectedTypes.map((type) => (
-            <Badge
-              key={type}
-              variant="secondary"
-              className="bg-blue-100 text-blue-800"
-            >
+            <Badge key={type} variant="secondary">
               {type}
               <button
                 onClick={() => toggleTypeFilter(type)}
-                className="ml-1 hover:text-blue-600"
+                className="ml-1"
               >
                 <X className="h-3 w-3" />
               </button>
             </Badge>
           ))}
           {selectedAmenities.map((amenity) => (
-            <Badge
-              key={amenity}
-              variant="secondary"
-              className="bg-green-100 text-green-800"
-            >
+            <Badge key={amenity} variant="secondary">
               {amenity}
               <button
                 onClick={() => toggleAmenityFilter(amenity)}
-                className="ml-1 hover:text-green-600"
+                className="ml-1"
               >
                 <X className="h-3 w-3" />
               </button>
             </Badge>
           ))}
           {(budgetRange[0] > 0 || budgetRange[1] < 3000000) && (
-            <Badge
-              variant="secondary"
-              className="bg-purple-100 text-purple-800"
-            >
+            <Badge variant="secondary">
               ${budgetRange[0]}-${budgetRange[1]}
               <button
                 onClick={() => setBudgetRange([0, 3000000])}
-                className="ml-1 hover:text-purple-600"
+                className="ml-1"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -507,8 +493,8 @@ export default function CoworkingPlacesPage() {
                   className="w-full h-64 object-cover transition-transform duration-500 hover:scale-105"
                 />
               ) : (
-                <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
-                  <MapPin className="h-8 w-8 text-gray-400" />
+                <div className="w-full h-64 bg-muted flex items-center justify-center">
+                  <MapPin className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
 
@@ -516,21 +502,21 @@ export default function CoworkingPlacesPage() {
 
             <div className="pt-3 space-y-1">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 truncate">
+                <h3 className="font-semibold text-foreground truncate">
                   {place.name}
                 </h3>
                 <div className="flex items-center gap-1">
                   <Star className="w-3 h-3 fill-current text-yellow-500" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-muted-foreground">
                     {place.rating || "New"}
                   </span>
                 </div>
               </div>
-              <div className="flex items-center text-sm text-gray-600 mb-1">
+              <div className="flex items-center text-sm text-muted-foreground mb-1">
                 <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                 <span className="truncate">{place.location}</span>
               </div>
-              <p className="text-sm text-gray-600 truncate">
+              <p className="text-sm text-muted-foreground truncate">
                 {formatPrice(place)} • {place.capacity} people
               </p>
             </div>
@@ -541,13 +527,13 @@ export default function CoworkingPlacesPage() {
       {/* Empty State */}
       {filteredPlaces.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
+          <div className="text-muted-foreground mb-4">
             <MapPin className="h-16 w-16 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             No spaces found
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             Try adjusting your filters or search terms
           </p>
           <Button onClick={clearAllFilters} variant="outline">
