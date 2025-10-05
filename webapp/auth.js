@@ -2,16 +2,19 @@ import NextAuth from "next-auth"
 import Asgardeo from "next-auth/providers/asgardeo"
 async function storeUserInBackend(profile,accessToken) {
   try {
+    // Build user payload while avoiding empty optional fields that might overwrite existing data
     const userData = {
       userId: profile.sub,
       username: profile.username || profile.email,
       firstName: profile.given_name || '',
       lastName: profile.family_name || '',
-      email: profile.email || profile.username,
-      country: profile.address?.country || '',
-      mobileNumber: profile.phone_number || '',
-      birthdate: profile.birthdate || ''
+      email: profile.email || profile.username
     };
+
+    // Optional fields: only include when non-empty
+    if (profile.address?.country) userData.country = profile.address.country;
+    if (profile.phone_number) userData.mobileNumber = profile.phone_number;
+    if (profile.birthdate) userData.birthdate = profile.birthdate;
 
     console.log('user data:', JSON.stringify(userData, null, 2));
 

@@ -1,21 +1,41 @@
 "use client";
-import { useState, useEffect } from "react";
-import { SearchBox } from "@mapbox/search-js-react";
-import mapboxgl from "mapbox-gl";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 
-// Initialize mapboxgl only on client side to avoid SSR issues
-let mapboxAccessToken = "";
-if (typeof window !== 'undefined') {
-  mapboxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+// Load Google Maps JS API with Places library
+function loadGoogleMapsPlaces() {
+  const existing = document.querySelector('script[data-google-maps-places-loader="true"]');
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      if (window.google?.maps?.places) return resolve(window.google);
+      existing.addEventListener("load", () => resolve(window.google));
+      existing.addEventListener("error", reject);
+    });
+  }
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    console.error("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set");
+    return Promise.reject(new Error("Missing Google Maps API key"));
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.setAttribute("data-google-maps-places-loader", "true");
+    script.onload = () => resolve(window.google);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
 }
 
 export default function LocationSelector({ onLocationSet, currentLocation }) {
   const [userLocation, setUserLocation] = useState(currentLocation || null);
   const { data: session } = useSession();
+  const inputRef = useRef(null);
+  const autocompleteRef = useRef(null);
 
   // Log component mount and session data
   useEffect(() => {
@@ -24,29 +44,37 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
     console.log("  Session exists:", !!session);
     console.log("  Session user:", session?.user);
     console.log("  Access token exists:", !!session?.access_token);
-    console.log("  Mapbox access token exists:", !!mapboxAccessToken);
-    console.log("  Mapbox access token:", mapboxAccessToken ? mapboxAccessToken.substring(0, 20) + "..." : "NOT SET");
   }, [session, currentLocation]);
 
-  const handleLocationSelect = (result) => {
-    console.log("🗺️ Location selected from mapbox:");
-    console.log("  Raw result:", result);
-
-    const { coordinates } = result.features[0].geometry;
-    const location = {
-      cityName: result.features[0].place_name,
-      latitude: coordinates[1],
-      longitude: coordinates[0],
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+    let isMounted = true;
+    if (!inputRef.current) return;
+    loadGoogleMapsPlaces()
+      .then((google) => {
+        if (!isMounted || !inputRef.current) return;
+        const options = {
+          types: ["(cities)"],
+          componentRestrictions: { country: "LK" },
+          fields: ["formatted_address", "geometry", "name"],
+        };
+        const ac = new google.maps.places.Autocomplete(inputRef.current, options);
+        autocompleteRef.current = ac;
+        ac.addListener("place_changed", () => {
+          const place = ac.getPlace();
+          if (!place?.geometry?.location) return;
+          const cityName = place.formatted_address || place.name || "";
+          const latitude = place.geometry.location.lat();
+          const longitude = place.geometry.location.lng();
+          setUserLocation({ cityName, latitude, longitude });
+        });
+      })
+      .catch((err) => console.error("Failed to load Google Places:", err));
+    return () => {
+      isMounted = false;
+      autocompleteRef.current = null;
     };
-
-    console.log("📍 Processed location data:");
-    console.log("  City Name:", location.cityName);
-    console.log("  Latitude:", location.latitude);
-    console.log("  Longitude:", location.longitude);
-
-    setUserLocation(location);
-    console.log("✅ Location state updated");
-  };
+  }, []);
 
   const saveLocation = async () => {
     console.log("=== LOCATION SAVER START ===");
@@ -135,20 +163,12 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
         </div>
 
         <div className="relative w-full">
-          <SearchBox
-            accessToken={mapboxAccessToken}
-            onRetrieve={(result) => {
-              console.log("🔍 Mapbox SearchBox onRetrieve triggered");
-              console.log("  Result:", result);
-              handleLocationSelect(result);
-            }}
+          <input
+            ref={inputRef}
+            type="text"
             placeholder="Search for your city..."
-            options={{
-              country: "LK",
-              types: "place,locality",
-              language: ["en"],
-              limit: 8
-            }}
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none"
+            aria-label="Search for your city"
           />
         </div>
 
