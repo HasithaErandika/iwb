@@ -40,11 +40,20 @@ export default function CityDetailPage({ params }) {
                         rank: c.rankPosition ?? c.rank ?? 0,
                         images: Array.isArray(c.imageUrls) ? c.imageUrls : [],
                         image: Array.isArray(c.imageUrls) && c.imageUrls.length > 0 ? c.imageUrls[0] : "/placeholder.svg",
-                        amenities: Array.isArray(c.amenities) ? c.amenities : [],
+                        amenities: c.amenities || [], // Keep amenities as is, let CityOverview handle parsing
                         population: c.population ?? 0,
                         temperature: c.temperature ?? 0,
                         ratingsBreakdown: c.ratingsBreakdown || {},
-                        totalRatings: c.totalRatings ?? 0, // Add this line to map totalRatings
+                        totalRatings: c.totalRatings ?? 0,
+                        costOfLiving: c.costOfLiving ?? 0,
+                        safety: c.safety ?? 0,
+                        transportation: c.transportation ?? 0,
+                        healthcare: c.healthcare ?? 0,
+                        food: c.food ?? 0,
+                        nightlife: c.nightlife ?? 0,
+                        culture: c.culture ?? 0,
+                        outdoorActivities: c.outdoorActivities ?? 0,
+                        internetSpeed: c.internetSpeed ?? 0,
                     }
                     setCity(mapped)
                 } else {
@@ -116,10 +125,10 @@ export default function CityDetailPage({ params }) {
                         </div>
                         <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 fill-current text-amber-500" />
-                            <span>{city.rating}</span>
+                            <span>{city.rating.toFixed(1)}</span>
                         </div>
                         <Badge className="bg-amber-500 text-white">
-                            Rank #{city.rank}
+                            Rank #{city.rank > 0 ? city.rank : 'N/A'}
                         </Badge>
                     </div>
                 </div>

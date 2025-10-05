@@ -11,7 +11,7 @@ import { Send, Loader2, Wifi, WifiOff } from "lucide-react"
 import { getAuthHeaders } from "@/lib/api"
 
 const API_BASE_URL = "http://localhost:8080";
-const WS_BASE_URL = "ws://localhost:8080/chat";
+const WS_BASE_URL = "ws://localhost:9090/chat";
 
 export default function ChatInterface({ cityId, userId = "guest-user", userName = "Guest" }) {
     const { data: session } = useSession();
@@ -20,7 +20,6 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
     const [chatConnected, setChatConnected] = useState(false)
     const [loadingHistory, setLoadingHistory] = useState(false)
     const [isSending, setIsSending] = useState(false)
-    const [connectionError, setConnectionError] = useState("")
 
     const messagesEndRef = useRef(null);
     const chatContainerRef = useRef(null);
@@ -29,7 +28,7 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
 
     // Get user info for chat
     const currentUser = {
-        id: session?.user?.id || userId,
+        id: session?.user?.email || userId,
         name: session?.user?.given_name && session?.user?.family_name
             ? `${session.user.given_name.trim()} ${session.user.family_name.trim()}`
             : session?.user?.given_name
@@ -37,7 +36,7 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
                 : session?.user?.family_name
                     ? session.user.family_name.trim()
                     : session?.user?.email
-                        ? session.user.email.split('@')[0]
+                        ? session.user.email
                         : userName,
     };
 
@@ -48,51 +47,39 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
             if (Array.isArray(timestamp) && timestamp.length > 0) {
                 // Convert [seconds, nanos] to milliseconds
                 date = new Date(timestamp[0] * 1000 + Math.floor((timestamp[1] || 0) / 1e6));
-            } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
-                date = new Date(timestamp);
             } else {
-                return "";
+                date = new Date(timestamp);
             }
-            
             if (isNaN(date.getTime())) {
                 return "";
             }
-            
             return date.toLocaleTimeString("en-US", {
                 hour: "numeric",
                 minute: "2-digit",
                 hour12: true,
             });
-        } catch (err) {
-            console.error("Error formatting timestamp:", err);
+        } catch {
             return "";
         }
     };
 
     // Load chat history
     const loadChatHistory = async () => {
-        if (!cityId) return;
-        
         try {
             setLoadingHistory(true);
             const response = await fetch(
-                `${API_BASE_URL}/api/cities/${cityId}/chat`,
+                `${API_BASE_URL}/api/chat/history/city/${cityId}`,
                 { headers: getAuthHeaders(session) }
             );
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
             const data = await response.json();
 
-            if (data.success && Array.isArray(data.data)) {
+            if (response.ok && data.success && data.data) {
                 const formattedMessages = data.data.map((msg) => ({
                     id: msg.messageId,
                     user: msg.userName,
                     userId: msg.userId,
                     message: msg.message,
-                    timestamp: formatTimestamp(msg.createdAt),
+                    timestamp: formatTimestamp(msg.timestamp),
                     isOwn: msg.userId === currentUser.id,
                 }));
                 setMessages(formattedMessages);
@@ -111,26 +98,22 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
             return;
         }
 
-        // Clear any existing reconnect attempts
-        if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
-        }
-
         try {
-            const ws = new WebSocket(`${WS_BASE_URL}`);
+            const ws = new WebSocket(`${WS_BASE_URL}/chat`);
             wsRef.current = ws;
 
             ws.onopen = () => {
                 console.log("WebSocket connected");
                 setChatConnected(true);
-                setConnectionError("");
 
                 // Join the city room
                 const joinMessage = {
                     type: "join",
-                    cityId: cityId,
-                    userId: currentUser.id,
-                    userName: currentUser.name,
+                    data: {
+                        cityId: cityId,
+                        userId: currentUser.id,
+                        userName: currentUser.name,
+                    },
                 };
                 ws.send(JSON.stringify(joinMessage));
             };
@@ -139,14 +122,14 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
                 try {
                     const data = JSON.parse(event.data);
 
-                    if (data.type === "message" && data.message) {
+                    if (data.type === "message" && data.data) {
                         const newMsg = {
-                            id: data.messageId || Date.now().toString(),
-                            user: data.userName,
-                            userId: data.userId,
-                            message: data.message,
-                            timestamp: formatTimestamp(data.createdAt || new Date().toISOString()),
-                            isOwn: data.userId === currentUser.id,
+                            id: data.data.messageId,
+                            user: data.data.userName,
+                            userId: data.data.userId,
+                            message: data.data.message,
+                            timestamp: formatTimestamp(data.data.timestamp),
+                            isOwn: data.data.userId === currentUser.id,
                         };
 
                         // Prevent duplicate messages
@@ -163,36 +146,29 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
                 }
             };
 
-            ws.onclose = (event) => {
-                console.log("WebSocket disconnected", event.reason);
+            ws.onclose = () => {
+                console.log("WebSocket disconnected");
                 setChatConnected(false);
 
-                // Don't reconnect if it was a clean close
-                if (event.code !== 1000) {
-                    // Attempt to reconnect after 3 seconds
-                    reconnectTimeoutRef.current = setTimeout(() => {
-                        if (cityId) {
-                            connectWebSocket();
-                        }
-                    }, 3000);
-                }
+                // Attempt to reconnect after 3 seconds
+                reconnectTimeoutRef.current = setTimeout(() => {
+                    connectWebSocket();
+                }, 3000);
             };
 
             ws.onerror = (error) => {
                 console.error("WebSocket error:", error);
                 setChatConnected(false);
-                setConnectionError("Connection error. Retrying...");
             };
         } catch (err) {
             console.error("Error connecting to WebSocket:", err);
             setChatConnected(false);
-            setConnectionError("Failed to connect to chat. Retrying...");
         }
     };
 
     const scrollToBottom = () => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     };
 
@@ -212,10 +188,12 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
 
         const messageData = {
             type: "message",
-            cityId: cityId,
-            userId: currentUser.id,
-            userName: currentUser.name,
-            message: newMessage.trim(),
+            data: {
+                cityId: cityId,
+                userId: currentUser.id,
+                userName: currentUser.name,
+                message: newMessage.trim(),
+            },
         };
 
         try {
@@ -223,7 +201,6 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
             setNewMessage("");
         } catch (error) {
             console.error("Error sending message:", error);
-            setConnectionError("Failed to send message. Please try again.");
         } finally {
             setIsSending(false);
         }
@@ -237,11 +214,9 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
         }
 
         return () => {
-            // Clean up WebSocket connection
             if (wsRef.current) {
-                wsRef.current.close(1000, "Component unmounted");
+                wsRef.current.close();
             }
-            // Clear reconnect timeout
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current);
             }
@@ -363,8 +338,8 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
                                 </div>
                             </div>
                         ))}
-                        <div ref={messagesEndRef} />
                     </div>
+                    <div ref={messagesEndRef} />
                 </ScrollArea>
                 <div className="border-t p-4">
                     <form onSubmit={handleSendMessage} className="flex gap-2">
@@ -377,7 +352,7 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             className="flex-1"
-                            disabled={!chatConnected || isSending}
+                            disabled={!chatConnected}
                         />
                         <Button
                             type="submit"
@@ -391,12 +366,7 @@ export default function ChatInterface({ cityId, userId = "guest-user", userName 
                             )}
                         </Button>
                     </form>
-                    {connectionError && (
-                        <p className="text-xs text-red-500 mt-2">
-                            {connectionError}
-                        </p>
-                    )}
-                    {!chatConnected && !connectionError && (
+                    {!chatConnected && (
                         <p className="text-xs text-red-500 mt-2">
                             Chat is disconnected. Trying to reconnect...
                         </p>
