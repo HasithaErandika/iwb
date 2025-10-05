@@ -1,3 +1,4 @@
+import ballerina/log;
 import ballerina/sql;
 
 //meetups
@@ -102,6 +103,8 @@ public isolated function insertUser(UserInsert userData) returns sql:ExecutionRe
 }
 
 public isolated function getUserById(string userId) returns UserRecord|sql:Error {
+    log:printInfo("🔍 getUserById called with userId: " + userId);
+
     sql:ParameterizedQuery selectQuery = `
         SELECT user_id, username, first_name, last_name, email, 
                country, mobile_number, birthdate, bio,
@@ -111,7 +114,14 @@ public isolated function getUserById(string userId) returns UserRecord|sql:Error
         WHERE user_id = ${userId}
     `;
 
-    return dbClient->queryRow(selectQuery);
+    UserRecord|sql:Error result = dbClient->queryRow(selectQuery);
+    if result is sql:Error {
+        log:printError("❌ Database query failed for userId: " + userId + ", Error: " + result.message());
+    } else {
+        log:printInfo("✅ Database query successful for userId: " + userId);
+    }
+
+    return result;
 }
 
 public isolated function getAllUsers() returns UserRecord[]|sql:Error {

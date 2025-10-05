@@ -23,7 +23,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Search, Trash2, Edit, Eye, Loader2, XCircle } from "lucide-react";
+import { ArrowLeft, Search, Trash2, Edit, Eye, Loader2, XCircle, Plus, Building2, MapPin, DollarSign, Users } from "lucide-react";
 import Link from "next/link";
 import { getAuthHeaders } from "@/lib/api"
 import { useSession } from "next-auth/react"
@@ -124,12 +124,12 @@ export default function ManagePlacesPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-white">
+            <div className="min-h-screen bg-background">
                 <div className="max-w-6xl mx-auto px-4 py-8">
                     <div className="flex items-center justify-center min-h-96">
                         <div className="text-center">
                             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-                            <p className="text-gray-600">Loading places...</p>
+                            <p className="text-muted-foreground">Loading places...</p>
                         </div>
                     </div>
                 </div>
@@ -138,22 +138,27 @@ export default function ManagePlacesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-background">
             <div className="max-w-6xl mx-auto px-4 py-8">
                 {/* Header */}
-                <div className="mb-8">
-                    <Link href="/workspace/places" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
+                <div className="mb-12">
+                    <Link
+                        href="/workspace/places"
+                        className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-6"
+                    >
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Back to Places
                     </Link>
-                    <h1 className="text-3xl font-semibold text-gray-900">Manage Places</h1>
-                    <p className="text-gray-600 mt-2">View and manage your created places</p>
+                    <div className="space-y-2">
+                        <h1 className="text-4xl font-bold tracking-tight">Manage Places</h1>
+                        <p className="text-lg text-muted-foreground">View and manage your created places</p>
+                    </div>
                 </div>
 
-                {/* Search */}
-                <div className="mb-6">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                {/* Search and Actions */}
+                <div className="mb-8 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                    <div className="relative max-w-md w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <Input
                             type="text"
                             placeholder="Search places..."
@@ -162,13 +167,19 @@ export default function ManagePlacesPage() {
                             className="pl-10"
                         />
                     </div>
+                    <Link href="/workspace/places/create">
+                        <Button className="flex items-center gap-2">
+                            <Plus className="h-4 w-4" />
+                            Add New Place
+                        </Button>
+                    </Link>
                 </div>
 
                 {/* Error Message */}
                 {error && (
-                    <Alert className="mb-6 border-red-200 bg-red-50">
-                        <XCircle className="h-4 w-4 text-red-600" />
-                        <AlertDescription className="text-red-800">
+                    <Alert className="mb-8 border-destructive/50 bg-destructive/10">
+                        <XCircle className="h-4 w-4 text-destructive" />
+                        <AlertDescription className="text-destructive">
                             {error}
                         </AlertDescription>
                     </Alert>
@@ -176,36 +187,38 @@ export default function ManagePlacesPage() {
 
                 {/* Places Table */}
                 {filteredPlaces.length > 0 ? (
-                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-card border rounded-lg overflow-hidden shadow-sm">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Place Name</TableHead>
-                                    <TableHead>Location</TableHead>
-                                    <TableHead>Price</TableHead>
-                                    <TableHead>Capacity</TableHead>
-                                    <TableHead>Types</TableHead>
-                                    <TableHead>Actions</TableHead>
+                                    <TableHead className="font-semibold">Place Name</TableHead>
+                                    <TableHead className="font-semibold">Location</TableHead>
+                                    <TableHead className="font-semibold">Price</TableHead>
+                                    <TableHead className="font-semibold">Capacity</TableHead>
+                                    <TableHead className="font-semibold">Types</TableHead>
+                                    <TableHead className="font-semibold">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredPlaces.map((place) => (
-                                    <TableRow key={place.placeId}>
+                                    <TableRow key={place.placeId} className="hover:bg-muted/50">
                                         <TableCell>
-                                            <div>
-                                                <div className="font-medium text-gray-900">{place.name}</div>
+                                            <div className="font-medium">{place.name}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm text-muted-foreground">
+                                                {place.location}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="text-sm text-gray-900">{place.location}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm text-gray-900">
+                                            <div className="text-sm font-medium">
                                                 {formatCurrency(place.pricing.price, place.pricing.currency)} per {place.pricing.billing}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="text-sm text-gray-900">{place.capacity}</div>
+                                            <div className="text-sm">
+                                                {place.capacity}
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-wrap gap-1">
@@ -213,15 +226,15 @@ export default function ManagePlacesPage() {
                                                     <Badge
                                                         key={type}
                                                         variant="secondary"
-                                                        className="text-xs bg-blue-100 text-blue-800"
+                                                        className="text-xs"
                                                     >
                                                         {type}
                                                     </Badge>
                                                 ))}
                                                 {place.workspaceTypes.length > 2 && (
                                                     <Badge
-                                                        variant="secondary"
-                                                        className="text-xs bg-gray-100 text-gray-600"
+                                                        variant="outline"
+                                                        className="text-xs"
                                                     >
                                                         +{place.workspaceTypes.length - 2} more
                                                     </Badge>
@@ -231,7 +244,7 @@ export default function ManagePlacesPage() {
                                         <TableCell>
                                             <div className="flex items-center space-x-2">
                                                 <Link href={`/workspace/places/${place.placeId}`}>
-                                                    <Button variant="ghost" size="sm">
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
                                                 </Link>
@@ -239,7 +252,7 @@ export default function ManagePlacesPage() {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => openDeleteDialog(place)}
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -251,22 +264,25 @@ export default function ManagePlacesPage() {
                         </Table>
                     </div>
                 ) : (
-                    <div className="text-center py-12">
-                        <div className="text-gray-400 mb-4">
-                            <Search className="h-16 w-16 mx-auto" />
+                    <div className="text-center py-16">
+                        <div className="text-muted-foreground mb-6">
+                            <Building2 className="h-16 w-16 mx-auto" />
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        <h3 className="text-xl font-semibold mb-2">
                             {searchTerm ? "No places found" : "No places yet"}
                         </h3>
-                        <p className="text-gray-600 mb-4">
+                        <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                             {searchTerm
-                                ? "Try adjusting your search terms"
-                                : "Create your first place to get started"
+                                ? "Try adjusting your search terms to find what you're looking for"
+                                : "Create your first workspace to get started and share it with the community"
                             }
                         </p>
                         {!searchTerm && (
                             <Link href="/workspace/places/create">
-                                <Button>Create Place</Button>
+                                <Button className="flex items-center gap-2">
+                                    <Plus className="h-4 w-4" />
+                                    Create Your First Place
+                                </Button>
                             </Link>
                         )}
                     </div>

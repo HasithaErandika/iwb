@@ -119,9 +119,7 @@ export function AppSidebar({ ...props }) {
               className="data-[slot=sidebar-menu-button]:!p-2  mb-3"
             >
               <a href="#">
-                <span className="text-xl font-semibold">
-                  The Cinnamon Circle
-                </span>
+                <span className="text-2xl font-semibold">Nomad Page</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

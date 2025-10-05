@@ -1,5 +1,6 @@
 import 'service.utils;
 
+import ballerina/log;
 import ballerina/sql;
 import ballerina/time;
 
@@ -69,10 +70,16 @@ public isolated function createOrUpdateUser(UserCreateRequest userRequest) retur
 public isolated function updateUserProfile(string userId, UserUpdateRequest updateRequest) returns UserResponse|error {
     string currentTime = time:utcNow().toString();
 
+    log:printInfo("🔍 updateUserProfile called with userId: " + userId);
+    log:printInfo("📝 Update request data: " + updateRequest.toJsonString());
+
     UserRecord|sql:Error existingUser = utils:getUserById(userId);
     if existingUser is sql:Error {
+        log:printError("❌ User lookup failed for userId: " + userId + ", Error: " + existingUser.message());
         return {success: false, message: "User not found"};
     }
+
+    log:printInfo("✅ User found: " + existingUser.user_id);
 
     UserUpdate userUpdate = {
         firstName: updateRequest?.firstName ?: existingUser.first_name,

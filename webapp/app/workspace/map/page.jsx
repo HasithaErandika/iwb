@@ -185,9 +185,25 @@ export default function IncidentMapPage() {
                 return
             }
 
+            // Get the actual user ID from the JWT token
+            let userId = "3f0c31a8-50a1-4c2a-9f3c-f1d19698b895"; // Fallback user ID
+
+            if (session?.access_token) {
+                try {
+                    const tokenPayload = JSON.parse(atob(session.access_token.split('.')[1]));
+                    userId = tokenPayload.sub;
+                    console.log('Using authenticated user ID:', userId);
+                } catch (error) {
+                    console.error('Error decoding JWT token:', error);
+                    console.log('Using fallback user ID:', userId);
+                }
+            } else {
+                console.log('No access token available, using fallback user ID:', userId);
+            }
+
             // Create incident data for API
             const incidentData = {
-                userId: "3f0c31a8-50a1-4c2a-9f3c-f1d19698b895", // Default user ID for demo
+                userId: userId,
                 type: formData.type,
                 description: formData.description,
                 latitude: lat,

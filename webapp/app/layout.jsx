@@ -1,8 +1,7 @@
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { SessionProvider } from "next-auth/react";
-import { ThemeProvider } from "@/components/theme-provider";
 import "leaflet/dist/leaflet.css";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import Providers from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,11 +28,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased`}
       >
-        <SessionProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            {children}
-          </ThemeProvider>
-        </SessionProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

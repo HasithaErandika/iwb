@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import ModeToggle from "@/components/mode-toggle"
+import { MobileNumberCard } from "@/components/mobile-number-card"
 import {
     Breadcrumb,
     BreadcrumbList,
@@ -105,6 +106,7 @@ export function SiteHeader() {
                 <div className="ml-auto flex items-center gap-2">
                     <div className="hidden md:flex items-center gap-2">
                         <ModeToggle />
+                        <MobileNumberCard />
                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted">
                             <span className="text-sm font-medium text-foreground">
                                 Hi, {getUserDisplayName()} 👋

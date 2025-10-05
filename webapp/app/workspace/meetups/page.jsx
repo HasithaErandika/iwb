@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,10 +24,18 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getAuthHeaders } from "@/lib/api"
-import { useSession } from "next-auth/react"
+import { getAuthHeaders } from "@/lib/api";
+import { useSession } from "next-auth/react";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -42,63 +50,96 @@ export default function EventsListing() {
   const [dateFilter, setDateFilter] = useState("all");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [savedIds, setSavedIds] = useState([]);
-  const { data: session } = useSession()
+  const { data: session, status } = useSession();
+  const hasFetchedRef = useRef(false);
 
-  const fetchMeetups = useCallback(async () => {
-    // Only fetch if session exists and has access_token
-    if (!session?.access_token) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await fetch(`${API_BASE_URL}/api/meetups`, {
-        headers: getAuthHeaders(session)
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.success && data.data) {
-          setEvents(data.data);
-        } else {
-          setError(data.message || "No meetups data received");
-        }
-      } else {
-        setError(data.message || "Failed to fetch meetups");
-      }
-    } catch (err) {
-      setError("Network error: Unable to fetch meetups");
-      console.error("Error fetching meetups:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [session]);
-
-  useEffect(() => {
-    fetchMeetups();
-  }, [fetchMeetups]);
-
+  // Load saved meetups only once on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem("savedMeetups");
-      if (saved) setSavedIds(JSON.parse(saved));
-    } catch { }
+      if (saved) {
+        setSavedIds(JSON.parse(saved));
+      }
+    } catch (err) {
+      console.error("Error loading saved meetups:", err);
+    }
   }, []);
 
+  // Save to localStorage whenever savedIds changes
   useEffect(() => {
     try {
       localStorage.setItem("savedMeetups", JSON.stringify(savedIds));
-    } catch { }
+    } catch (err) {
+      console.error("Error saving meetups:", err);
+    }
   }, [savedIds]);
 
-  const cities = Array.from(
-    new Set(events.map((event) => event.venueName).filter(Boolean))
-  );
-  const categories = ["Workshop", "Networking", "Social", "Tech", "Business"]; // Common meetup categories
+  // Fetch meetups only once when session is ready
+  useEffect(() => {
+    const fetchMeetups = async () => {
+      // Prevent multiple fetches
+      if (hasFetchedRef.current) return;
 
-  const formatDateTime = (date, time) => {
+      // Wait for session to be loaded
+      if (status === "loading") return;
+
+      // Check if we have a valid session
+      if (!session?.access_token) {
+        setLoading(false);
+        setError("Please log in to view meetups");
+        return;
+      }
+
+      hasFetchedRef.current = true;
+
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(`${API_BASE_URL}/api/meetups`, {
+          headers: getAuthHeaders(session),
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          if (data.success && data.data) {
+            setEvents(data.data);
+          } else {
+            setError(data.message || "No meetups data received");
+          }
+        } else {
+          setError(data.message || "Failed to fetch meetups");
+        }
+      } catch (err) {
+        setError("Network error: Unable to fetch meetups");
+        console.error("Error fetching meetups:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeetups();
+  }, [session?.access_token, status]);
+
+  // Manual refresh function
+  const handleRefresh = useCallback(() => {
+    hasFetchedRef.current = false;
+    setLoading(true);
+    setError("");
+
+    // Trigger re-fetch by updating a counter or re-running the effect
+    window.location.reload();
+  }, []);
+
+  const cities = useMemo(
+    () =>
+      Array.from(
+        new Set(events.map((event) => event.venueName).filter(Boolean))
+      ),
+    [events]
+  );
+
+  const formatDateTime = useCallback((date, time) => {
     try {
       const datetime = new Date(`${date}T${time}`);
       return {
@@ -116,47 +157,49 @@ export default function EventsListing() {
     } catch {
       return { date: date, time: time };
     }
-  };
+  }, []);
 
-  const formatCurrency = (amount) => {
+  const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     }).format(amount);
-  };
+  }, []);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 200);
 
-  const filteredEvents = useMemo(() => events.filter((event) => {
-    const cityMatch =
-      selectedCity === "all" || event.venueName === selectedCity;
-    const categoryMatch = selectedCategory === "all";
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      const cityMatch =
+        selectedCity === "all" || event.venueName === selectedCity;
+      const categoryMatch = selectedCategory === "all";
 
-    const searchMatch =
-      debouncedSearch === "" ||
-      event.eventName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      event.venueName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      (event.eventDescription &&
-        event.eventDescription
-          .toLowerCase()
-          .includes(debouncedSearch.toLowerCase()));
+      const searchMatch =
+        debouncedSearch === "" ||
+        event.eventName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        event.venueName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        (event.eventDescription &&
+          event.eventDescription
+            .toLowerCase()
+            .includes(debouncedSearch.toLowerCase()));
 
-    const eventDate = new Date(event.eventStartDate);
-    const today = new Date();
-    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const nextMonth = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const eventDate = new Date(event.eventStartDate);
+      const today = new Date();
+      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const nextMonth = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    let dateMatch = true;
-    if (dateFilter === "week") {
-      dateMatch = eventDate <= nextWeek;
-    } else if (dateFilter === "month") {
-      dateMatch = eventDate <= nextMonth;
-    }
+      let dateMatch = true;
+      if (dateFilter === "week") {
+        dateMatch = eventDate <= nextWeek;
+      } else if (dateFilter === "month") {
+        dateMatch = eventDate <= nextMonth;
+      }
 
-    return cityMatch && categoryMatch && searchMatch && dateMatch;
-  }), [events, selectedCity, selectedCategory, debouncedSearch, dateFilter]);
+      return cityMatch && categoryMatch && searchMatch && dateMatch;
+    });
+  }, [events, selectedCity, selectedCategory, debouncedSearch, dateFilter]);
 
-  const formatDisplayDate = (dateString) => {
+  const formatDisplayDate = useCallback((dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       weekday: "long",
@@ -164,15 +207,30 @@ export default function EventsListing() {
       month: "long",
       day: "numeric",
     });
-  };
+  }, []);
+
+  const handleSaveToggle = useCallback((e, eventId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSavedIds((prev) =>
+      prev.includes(eventId)
+        ? prev.filter((id) => id !== eventId)
+        : [...prev, eventId]
+    );
+  }, []);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
-            <p className="text-muted-foreground mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+              Connect With Nomads & Locals in Sri Lanka 🏝️
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Whether you're in the city or by the beach, find fun meetups that
+              help you connect, share, and explore.
+            </p>
           </div>
           <div className="flex items-center justify-center min-h-72">
             <div className="text-center">
@@ -190,16 +248,19 @@ export default function EventsListing() {
       <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
-            <p className="text-muted-foreground mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+              Connect With Nomads & Locals in Sri Lanka 🏝️
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Whether you're in the city or by the beach, find fun meetups that
+              help you connect, share, and explore.
+            </p>
           </div>
           <Alert className="mb-6">
             <XCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription>
-              {error}
-            </AlertDescription>
+            <AlertDescription>{error}</AlertDescription>
           </Alert>
-          <Button onClick={fetchMeetups} variant="outline">
+          <Button onClick={handleRefresh} variant="outline">
             Try Again
           </Button>
         </div>
@@ -212,8 +273,13 @@ export default function EventsListing() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Connect With Nomads & Locals in Sri Lanka 🏝️</h1>
-            <p className="text-muted-foreground mt-1">Whether you’re in the city or by the beach, find fun meetups that help you connect, share, and explore.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+              Connect With Nomads & Locals in Sri Lanka 🏝️
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Whether you're in the city or by the beach, find fun meetups that
+              help you connect, share, and explore.
+            </p>
           </div>
           <Link href="/workspace/meetups/create">
             <Button>
@@ -234,33 +300,42 @@ export default function EventsListing() {
               className="pl-10 h-9"
             />
           </div>
-          <Sheet open={isFiltersOpen} onOpenChange={(open) => !open && setIsFiltersOpen(false)}>
+          <Sheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
             <SheetTrigger asChild>
-              <Button className="h-9 px-4" onClick={() => setIsFiltersOpen(true)}>
-                Advanced Filters
-              </Button>
+              <Button className="h-9 px-4">Advanced Filters</Button>
             </SheetTrigger>
             <SheetContent
               side="right"
-              className={`${isMobile
-                ? "max-w-[95%] max-h-[80vh] p-4 rounded-xl"
-                : "max-w-3xl p-6 rounded-xl"
-                } overflow-hidden flex flex-col [&>button]:hidden`}
+              className={`${
+                isMobile
+                  ? "max-w-[95%] max-h-[80vh] p-4 rounded-xl"
+                  : "max-w-3xl p-6 rounded-xl"
+              } overflow-hidden flex flex-col [&>button]:hidden`}
             >
               <div className="absolute right-3 top-3 z-50">
-                <Button variant="ghost" size="icon" onClick={() => setIsFiltersOpen(false)} className="h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsFiltersOpen(false)}
+                  className="h-8 w-8 rounded-full"
+                >
                   <X className="h-4 w-4" />
                   <span className="sr-only">Close</span>
                 </Button>
               </div>
               <SheetHeader className="p-4 pb-2">
-                <SheetTitle className="text-xl " >Advanced Filters</SheetTitle>
+                <SheetTitle className="text-xl">Advanced Filters</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-3">
                 <div className="w-full sm:max-w-xs">
-                  <label className="text-sm font-medium text-foreground/80 mb-1 block">Date</label>
+                  <label className="text-sm font-medium text-foreground/80 mb-1 block">
+                    Date
+                  </label>
                   <Select value={dateFilter} onValueChange={setDateFilter}>
-                    <SelectTrigger aria-label="Date" className="h-9 text-sm w-full">
+                    <SelectTrigger
+                      aria-label="Date"
+                      className="h-9 text-sm w-full"
+                    >
                       <SelectValue placeholder="Any time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -271,22 +346,38 @@ export default function EventsListing() {
                   </Select>
                 </div>
                 <div className="w-full sm:max-w-xs">
-                  <label className="text-sm font-medium text-foreground/80 mb-1 block">Location</label>
+                  <label className="text-sm font-medium text-foreground/80 mb-1 block">
+                    Location
+                  </label>
                   <Select value={selectedCity} onValueChange={setSelectedCity}>
-                    <SelectTrigger aria-label="Location" className="h-9 text-sm w-full">
+                    <SelectTrigger
+                      aria-label="Location"
+                      className="h-9 text-sm w-full"
+                    >
                       <SelectValue placeholder="All locations" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All locations</SelectItem>
                       {cities.map((city) => (
-                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                        <SelectItem key={city} value={city}>
+                          {city}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <SheetFooter className="mt-6 flex flex-col gap-2 px-4 sm:px-0">
-                <Button variant="ghost" className="w-full sm:max-w-xs" onClick={() => { setSelectedCity("all"); setDateFilter("all"); }}>Clear</Button>
+                <Button
+                  variant="ghost"
+                  className="w-full sm:max-w-xs"
+                  onClick={() => {
+                    setSelectedCity("all");
+                    setDateFilter("all");
+                  }}
+                >
+                  Clear
+                </Button>
                 <SheetClose asChild>
                   <Button className="w-full sm:max-w-xs">Apply</Button>
                 </SheetClose>
@@ -312,20 +403,34 @@ export default function EventsListing() {
                       src={event.imageUrl || "/images/hero.avif"}
                       alt={event.eventName}
                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                      onError={(e) => { e.currentTarget.src = "/images/hero.avif"; }}
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/hero.avif";
+                      }}
                     />
                     <button
-                      onClick={(e) => { e.preventDefault(); setSavedIds((prev) => prev.includes(event.eventId) ? prev.filter(id => id !== event.eventId) : [...prev, event.eventId]); }}
+                      onClick={(e) => handleSaveToggle(e, event.eventId)}
                       aria-label="Save meetup"
                       className="absolute top-3 right-3 inline-flex items-center justify-center h-9 w-9 rounded-full bg-background/90 text-foreground shadow-sm"
                     >
-                      <Heart className={`h-5 w-5 ${savedIds.includes(event.eventId) ? "fill-red-500 text-red-500" : ""}`} />
+                      <Heart
+                        className={`h-5 w-5 ${
+                          savedIds.includes(event.eventId)
+                            ? "fill-red-500 text-red-500"
+                            : ""
+                        }`}
+                      />
                     </button>
                   </div>
                   <div className="p-3">
-                    <h3 className="font-medium text-[15px] text-foreground truncate">{event.eventName}</h3>
-                    <p className="text-[13px] text-muted-foreground truncate">{event.venueName}</p>
-                    <p className="text-[13px] text-muted-foreground mt-1">{formatDisplayDate(event.eventStartDate)} • {time}</p>
+                    <h3 className="font-medium text-[15px] text-foreground truncate">
+                      {event.eventName}
+                    </h3>
+                    <p className="text-[13px] text-muted-foreground truncate">
+                      {event.venueName}
+                    </p>
+                    <p className="text-[13px] text-muted-foreground mt-1">
+                      {formatDisplayDate(event.eventStartDate)} • {time}
+                    </p>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {event.isPaidEvent && (
                         <Badge variant="secondary" className="text-[11px]">
@@ -358,18 +463,18 @@ export default function EventsListing() {
             {(searchTerm !== "" ||
               selectedCity !== "all" ||
               dateFilter !== "all") && (
-                <Button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSelectedCity("all");
-                    setDateFilter("all");
-                  }}
-                  variant="outline"
-                  className="mt-4"
-                >
-                  Clear Filters
-                </Button>
-              )}
+              <Button
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedCity("all");
+                  setDateFilter("all");
+                }}
+                variant="outline"
+                className="mt-4"
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
         )}
       </div>
