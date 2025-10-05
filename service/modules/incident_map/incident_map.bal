@@ -101,6 +101,13 @@ public function createIncident(IncidentCreateRequest incidentRequest) returns In
     Incident incident = mapIncidentRecordToIncident(createdIncident);
     broadcastIncident(incident);
 
+    notifyNearbyUsers(
+            incidentRequest.latitude,
+            incidentRequest.longitude,
+            incidentRequest.'type,
+            incidentRequest.description
+    );
+
     return {success: true, message: "incident created successfully", data: incident};
 }
 
@@ -187,8 +194,8 @@ public type Incident record {
     string userId;
     string incidentType;
     string description;
-    decimal latitude;
-    decimal longitude;
+    float latitude;
+    float longitude;
     string reportedAt;
     string createdAt;
     string updatedAt;
@@ -198,8 +205,8 @@ public type IncidentCreateRequest record {
     string userId;
     string 'type;
     string description;
-    decimal latitude;
-    decimal longitude;
+    float latitude;
+    float longitude;
 };
 
 public type IncidentResponse record {
@@ -219,8 +226,8 @@ public type IncidentRecord record {
     string user_id;
     string incident_type;
     string description;
-    decimal latitude;
-    decimal longitude;
+    float latitude;
+    float longitude;
     string reported_at;
     string created_at;
     string updated_at;
@@ -231,8 +238,8 @@ public type IncidentInsert record {
     string userId;
     string incidentType;
     string description;
-    decimal latitude;
-    decimal longitude;
+    float latitude;
+    float longitude;
     string reportedAt;
     string createdAt;
     string updatedAt;

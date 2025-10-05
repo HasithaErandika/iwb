@@ -1,5 +1,6 @@
 import 'service.utils;
 
+import ballerina/log;
 import ballerina/sql;
 import ballerina/time;
 
@@ -16,6 +17,9 @@ public isolated function createOrUpdateUser(UserCreateRequest userRequest) retur
             mobileNumber: userRequest?.mobileNumber,
             birthdate: userRequest?.birthdate,
             bio: existingUser?.bio,
+            cityName: userRequest?.cityName,
+            cityLatitude: userRequest?.cityLatitude,
+            cityLongitude: userRequest?.cityLongitude,
             updatedAt: currentTime
         };
 
@@ -41,6 +45,9 @@ public isolated function createOrUpdateUser(UserCreateRequest userRequest) retur
             country: userRequest?.country,
             mobileNumber: userRequest?.mobileNumber,
             birthdate: userRequest?.birthdate,
+            cityName: userRequest?.cityName,
+            cityLatitude: userRequest?.cityLatitude,
+            cityLongitude: userRequest?.cityLongitude,
             createdAt: currentTime,
             updatedAt: currentTime
         };
@@ -63,10 +70,16 @@ public isolated function createOrUpdateUser(UserCreateRequest userRequest) retur
 public isolated function updateUserProfile(string userId, UserUpdateRequest updateRequest) returns UserResponse|error {
     string currentTime = time:utcNow().toString();
 
+    log:printInfo("🔍 updateUserProfile called with userId: " + userId);
+    log:printInfo("📝 Update request data: " + updateRequest.toJsonString());
+
     UserRecord|sql:Error existingUser = utils:getUserById(userId);
     if existingUser is sql:Error {
+        log:printError("❌ User lookup failed for userId: " + userId + ", Error: " + existingUser.message());
         return {success: false, message: "User not found"};
     }
+
+    log:printInfo("✅ User found: " + existingUser.user_id);
 
     UserUpdate userUpdate = {
         firstName: updateRequest?.firstName ?: existingUser.first_name,
@@ -75,6 +88,10 @@ public isolated function updateUserProfile(string userId, UserUpdateRequest upda
         mobileNumber: updateRequest?.mobileNumber ?: existingUser.mobile_number,
         birthdate: updateRequest?.birthdate ?: existingUser.birthdate,
         bio: updateRequest?.bio ?: existingUser.bio,
+        cityName: updateRequest?.cityName ?: existingUser.city_name,
+        cityLatitude: updateRequest?.cityLatitude ?: existingUser.city_latitude,
+        cityLongitude: updateRequest?.cityLongitude ?: existingUser.city_longitude,
+
         updatedAt: currentTime
     };
 
@@ -128,6 +145,9 @@ isolated function mapUserRecordToUser(UserRecord userRecord) returns User {
         mobileNumber: userRecord.mobile_number,
         birthdate: userRecord.birthdate,
         bio: userRecord.bio,
+        cityName: userRecord.city_name,
+        cityLatitude: userRecord.city_latitude,
+        cityLongitude: userRecord.city_longitude,
         createdAt: userRecord.created_at,
         updatedAt: userRecord.updated_at
     };

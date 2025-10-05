@@ -8,6 +8,9 @@ public type User record {|
     string? mobileNumber?;
     string? birthdate?;
     string? bio?;
+    string? cityName?;
+    float? cityLatitude?;
+    float? cityLongitude?;
     string createdAt;
     string updatedAt;
 |};
@@ -21,6 +24,9 @@ public type UserCreateRequest record {|
     string? country?;
     string? mobileNumber?;
     string? birthdate?;
+    string? cityName?;
+    float? cityLatitude?;
+    float? cityLongitude?;
 |};
 
 public type UserUpdateRequest record {|
@@ -30,6 +36,9 @@ public type UserUpdateRequest record {|
     string? mobileNumber?;
     string? birthdate?;
     string? bio?;
+    string? cityName?;
+    float? cityLatitude?;
+    float? cityLongitude?;
 |};
 
 public type UserResponse record {|
@@ -54,6 +63,9 @@ public type UserRecord record {|
     string? mobile_number;
     string? birthdate;
     string? bio;
+    string? city_name;
+    float? city_latitude;
+    float? city_longitude;
     string created_at;
     string updated_at;
 |};
@@ -67,6 +79,9 @@ public type UserInsert record {|
     string? country;
     string? mobileNumber;
     string? birthdate;
+    string? cityName;
+    float? cityLatitude;
+    float? cityLongitude;
     string createdAt;
     string updatedAt;
 |};
@@ -78,5 +93,8 @@ public type UserUpdate record {|
     string? mobileNumber;
     string? birthdate;
     string? bio;
+    string? cityName;
+    float? cityLatitude;
+    float? cityLongitude;
     string updatedAt;
 |};

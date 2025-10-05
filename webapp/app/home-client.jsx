@@ -10,7 +10,7 @@ import { signInAction, signUpAction } from "./actions";
 export default function HomeClient({ session }) {
   return (
     <SessionProvider session={session}>
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col">
         <div className="flex-1 flex items-center justify-center px-12 py-6">
           <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* left */}
@@ -21,7 +21,7 @@ export default function HomeClient({ session }) {
               transition={{ duration: 0.6, ease: "easeOut" }}
             >
               <motion.h1
-                className="text-4xl lg:text-5xl font-serif text-gray-900 leading-tight"
+                className="text-4xl lg:text-5xl font-serif text-foreground leading-tight"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
@@ -30,7 +30,7 @@ export default function HomeClient({ session }) {
                 <span className="italic">Pearl of the Indian Ocean</span>
               </motion.h1>
               <motion.p
-                className="text-gray-700 text-lg leading-relaxed max-w-lg"
+                className="text-muted-foreground text-lg leading-relaxed max-w-lg"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6 }}
@@ -51,9 +51,8 @@ export default function HomeClient({ session }) {
                     <form action={signInAction}>
                       <motion.div>
                         <Button
-                          variant="ghost"
                           type="submit"
-                          className="!bg-slate-950  !hover:bg-blue-600 !text-white hover:cursor-pointer font-medium px-6 py-5 text-md rounded-md transition-colors duration-200"
+                          className="font-medium px-6 py-5 text-md rounded-md transition-colors duration-200"
                         >
                           Sign In
                         </Button>
@@ -62,9 +61,9 @@ export default function HomeClient({ session }) {
                     <form action={signUpAction}>
                       <motion.div>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           type="submit"
-                          className="border border-slate-950 !text-slate-950 hover:cursor-pointer font-medium px-6 py-5 text-md rounded-md transition-colors duration-200"
+                          className="font-medium px-6 py-5 text-md rounded-md transition-colors duration-200"
                         >
                           Sign Up
                         </Button>
@@ -77,7 +76,7 @@ export default function HomeClient({ session }) {
                     <motion.div>
                       <Button
                         onClick={() => (window.location.href = "/workspace")}
-                        className="!bg-slate-950  !hover:bg-blue-600 !text-white hover:cursor-pointer font-medium px-6 py-5 text-md rounded-md transition-colors duration-200"
+                        className="font-medium px-6 py-5 text-md rounded-md transition-colors duration-200"
                       >
                         Go to Workspace
                       </Button>
@@ -101,7 +100,6 @@ export default function HomeClient({ session }) {
                   src="/images/hero.avif"
                   alt="Paradise landscape"
                   fill
-                  sizes="(max-width: 1024px) 24rem, 500px"
                   className="object-cover rounded-lg"
                   priority
                 />
@@ -112,7 +110,7 @@ export default function HomeClient({ session }) {
 
         {/* footer */}
         <footer className="py-5 px-12">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center text-sm text-gray-600 gap-4">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center text-sm text-muted-foreground gap-4">
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <span>
                 Built for{" "}
@@ -120,7 +118,7 @@ export default function HomeClient({ session }) {
                   href="https://innovatewithballerina.com/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
+                  className="text-primary underline hover:opacity-90"
                 >
                   Innovate with Ballerina 2025
                 </a>
@@ -131,7 +129,7 @@ export default function HomeClient({ session }) {
                   href="https://github.com/chamals3n4/iwb"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
+                  className="text-primary underline hover:opacity-90"
                 >
                   Github
                 </a>

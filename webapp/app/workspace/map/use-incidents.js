@@ -20,11 +20,6 @@ export function useIncidents() {
         try {
             setLoading(true);
             setError(null);
-            if (!session?.access_token) {
-                // Wait for auth; avoid immediate 401s during hydration
-                setLoading(false);
-                return;
-            }
             const response = await getAllIncidents(session);
             
             if (response.success) {

@@ -190,16 +190,16 @@ export default function JobListingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="max-w-[1100px] mx-auto px-2 py-6">
           <div className="mb-8">
-            <h1 className="text-3xl font-semibold text-gray-900 mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
-            <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
+            <h1 className="text-3xl font-semibold text-foreground mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
+            <p className="text-muted-foreground">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
           </div>
           <div className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-black">Loading remote jobs...</p>
+              <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-foreground">Loading remote jobs...</p>
             </div>
           </div>
         </div>
@@ -209,15 +209,15 @@ export default function JobListingsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="max-w-[1100px] mx-auto px-2 py-6">
           <div className="mb-8">
-            <h1 className="text-3xl font-semibold text-gray-900 mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
-            <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
+            <h1 className="text-3xl font-semibold text-foreground mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
+            <p className="text-muted-foreground">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
           </div>
-          <Alert className="border-red-200 bg-red-50 mb-6">
+          <Alert className="mb-6">
             <XCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
+            <AlertDescription>
               {error.includes("Failed to fetch") ? "Please check your internet connection and try again." : error}
             </AlertDescription>
           </Alert>
@@ -230,27 +230,27 @@ export default function JobListingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-[1100px] mx-auto px-2 py-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
-          <p className="text-gray-600">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
+          <h1 className="text-3xl font-semibold text-foreground mb-1">Find Jobs Beyond Borders – From Sri Lanka</h1>
+          <p className="text-muted-foreground">Discover remote opportunities that let you work for global companies while staying in Sri Lanka.</p>
         </div>
 
         <div className="mb-6 flex items-center gap-3">
           <div className="relative flex-1 max-w-lg">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search jobs, companies, or keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-9"
+              className="pl-10 bg-background border-input focus:border-ring focus:ring-ring h-9"
             />
           </div>
 
           <Sheet open={isOpen} onOpenChange={(open) => !open && setIsOpen(false)}>
             <SheetTrigger asChild>
-              <Button className="bg-indigo-600 text-white hover:bg-indigo-700 h-9 px-4" onClick={() => setIsOpen(true)}>Advanced Filters</Button>
+              <Button className="h-9 px-4" onClick={() => setIsOpen(true)}>Advanced Filters</Button>
             </SheetTrigger>
             <SheetContent
               side="right"
@@ -267,7 +267,7 @@ export default function JobListingsPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 rounded-full hover:bg-gray-100"
+                  className="h-8 w-8 rounded-full"
                 >
                   <X className="h-4 w-4" />
                   <span className="sr-only">Close</span>
@@ -282,9 +282,9 @@ export default function JobListingsPage() {
                   const currentValue = activeFilters[filter.id]
                   return (
                     <div key={filter.id} className="space-y-1.5">
-                      <label className="text-sm font-medium text-gray-700">{filter.label}</label>
+                      <label className="text-sm font-medium text-foreground/80">{filter.label}</label>
                       <Select value={currentValue} onValueChange={(value) => updateFilter(filter.id, value)}>
-                        <SelectTrigger className="h-9 bg-white border-gray-300 w-full">
+                        <SelectTrigger className="h-9 w-full">
                           <SelectValue placeholder={filter.label} />
                         </SelectTrigger>
                         <SelectContent>
@@ -301,23 +301,23 @@ export default function JobListingsPage() {
                 })}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Min salary</label>
+                    <label className="text-sm font-medium text-foreground/80">Min salary</label>
                     <Input
                       type="number"
                       placeholder="e.g. 50000"
                       value={activeFilters.minSalary}
                       onChange={(e) => updateFilter("minSalary", e.target.value)}
-                      className="h-9 bg-white border-gray-300 w-full"
+                      className="h-9 w-full"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Max salary</label>
+                    <label className="text-sm font-medium text-foreground/80">Max salary</label>
                     <Input
                       type="number"
                       placeholder="e.g. 120000"
                       value={activeFilters.maxSalary}
                       onChange={(e) => updateFilter("maxSalary", e.target.value)}
-                      className="h-9 bg-white border-gray-300 w-full"
+                      className="h-9 w-full"
                     />
                   </div>
                 </div>
@@ -325,7 +325,7 @@ export default function JobListingsPage() {
               <SheetFooter>
                 <Button variant="ghost" size="sm" onClick={clearAllFilters}>Clear</Button>
                 <SheetClose asChild>
-                  <Button size="sm" className="text-white bg-indigo-600 hover:bg-indigo-700">Apply</Button>
+                  <Button size="sm">Apply</Button>
                 </SheetClose>
               </SheetFooter>
             </SheetContent>
@@ -336,17 +336,17 @@ export default function JobListingsPage() {
           {filteredJobs.map((job) => (
             <Card
               key={job.url}
-              className="bg-white border-2 border-gray-200 hover:border-indigo-600 rounded-xl shadow-none transition-all duration-200 cursor-pointer"
+              className="border-2 hover:border-primary rounded-xl shadow-none transition-all duration-200 cursor-pointer"
               onClick={() => handleJobClick(job.url)}
             >
               <CardContent className="px-5 py-1">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0 pr-4">
-                    <h3 className="text-xl leading-6 font-medium text-slate-900 mb-1 truncate">{job.title}</h3>
-                    <p className="text-lg leading-5 text-slate-600 truncate">{formatLocation(job.location)}</p>
+                    <h3 className="text-xl leading-6 font-medium text-foreground mb-1 truncate">{job.title}</h3>
+                    <p className="text-lg leading-5 text-muted-foreground truncate">{formatLocation(job.location)}</p>
                   </div>
                   <div className="ml-4 flex-shrink-0">
-                    <svg className="w-5 h-5 text-white hover:text-black transition-transform duration-150 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 transition-transform duration-150 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -358,11 +358,11 @@ export default function JobListingsPage() {
 
         {filteredJobs.length === 0 && !loading && (
           <div className="text-center py-16">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Briefcase className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-muted">
+              <Briefcase className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-            <p className="text-gray-600 max-w-md mx-auto">
+            <h3 className="text-lg font-medium text-foreground mb-2">No jobs found</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
               Try adjusting your search terms or filters to discover more opportunities.
             </p>
           </div>

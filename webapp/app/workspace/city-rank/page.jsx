@@ -48,12 +48,12 @@ export default function CityRankPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-white">
+            <div className="min-h-screen bg-background">
                 <div className="max-w-6xl mx-auto px-4 py-8">
                     <div className="flex items-center justify-center min-h-96">
                         <div className="text-center">
                             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-                            <p className="text-gray-600">Loading cities...</p>
+                            <p className="text-muted-foreground">Loading cities...</p>
                         </div>
                     </div>
                 </div>
@@ -65,8 +65,8 @@ export default function CityRankPage() {
         <div className="min-h-screen bg-background">
             <div className="container mx-auto px-8 py-6">
                 <div className="mb-8 pt-3 text-left">
-                    <h1 className="text-3xl font-semibold tracking-tight text-black">Where Should You Be in Sri Lanka? 🤔</h1>
-                    <p className="text-gray-600 mt-1">Discover cities through community rankings, ratings, and hidden stories..</p>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">Where Should You Be in Sri Lanka? 🤔</h1>
+                    <p className="text-muted-foreground mt-1">Discover cities through community rankings, ratings, and hidden stories..</p>
 
                 </div>
 
@@ -74,7 +74,7 @@ export default function CityRankPage() {
                     <div className="flex justify-start">
                         <Button
                             onClick={() => router.push("/workspace/city-rank/add-city")}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-primary-foreground"
+                            className="bg-primary hover:opacity-90 text-primary-foreground"
                         >
                             Add New City
                         </Button>
@@ -98,15 +98,15 @@ export default function CityRankPage() {
 
                                     <div className="pt-3 space-y-1">
                                         <div className="flex items-center justify-between">
-                                            <h3 className="font-semibold text-gray-900">
+                                            <h3 className="font-semibold text-foreground">
                                                 {city.name}
                                             </h3>
                                             <div className="flex items-center gap-1">
-                                                <Star className="w-3 h-3 fill-current text-gray-900" />
+                                                <Star className="w-3 h-3 fill-current text-foreground" />
                                                 <span className="text-sm font-medium">{city.rating}</span>
                                             </div>
                                         </div>
-                                        <p className="text-gray-600 text-sm truncate">
+                                        <p className="text-muted-foreground text-sm truncate">
                                             {city.description}
                                         </p>
                                     </div>
@@ -115,9 +115,9 @@ export default function CityRankPage() {
                         </div>
                     ) : (
                         <div className="py-16">
-                            <div className="max-w-xl mx-auto rounded-lg border border-gray-200 bg-white/70 backdrop-blur-sm p-5 sm:p-6">
-                                <div className="text-base sm:text-lg font-semibold text-gray-900">No cities yet</div>
-                                <p className="mt-1 text-sm sm:text-base text-gray-600">
+                            <div className="max-w-xl mx-auto rounded-lg border border-border bg-card p-5 sm:p-6">
+                                <div className="text-base sm:text-lg font-semibold text-foreground">No cities yet</div>
+                                <p className="mt-1 text-sm sm:text-base text-muted-foreground">
                                     Start building your city database by adding the first city. Share your experiences and help others discover amazing places.
                                 </p>
                             </div>

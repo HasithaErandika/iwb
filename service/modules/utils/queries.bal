@@ -1,3 +1,4 @@
+import ballerina/log;
 import ballerina/sql;
 
 //meetups
@@ -88,11 +89,12 @@ public isolated function insertUser(UserInsert userData) returns sql:ExecutionRe
     sql:ParameterizedQuery insertQuery = `
         INSERT INTO users (
             user_id, username, first_name, last_name, email, 
-            country, mobile_number, birthdate, created_at, updated_at
+            country, mobile_number, birthdate,city_name, city_latitude, city_longitude, created_at, updated_at
         ) VALUES (
             ${userData.userId}, ${userData.username}, ${userData.firstName}, 
             ${userData.lastName}, ${userData.email}, ${userData.country}, 
             ${userData.mobileNumber}, ${userData.birthdate}, 
+            ${userData.cityName}, ${userData.cityLatitude}, ${userData.cityLongitude},
             ${userData.createdAt}, ${userData.updatedAt}
         )
     `;
@@ -101,20 +103,33 @@ public isolated function insertUser(UserInsert userData) returns sql:ExecutionRe
 }
 
 public isolated function getUserById(string userId) returns UserRecord|sql:Error {
+    log:printInfo("🔍 getUserById called with userId: " + userId);
+
     sql:ParameterizedQuery selectQuery = `
         SELECT user_id, username, first_name, last_name, email, 
-               country, mobile_number, birthdate, bio, created_at, updated_at
+               country, mobile_number, birthdate, bio,
+               city_name, city_latitude, city_longitude,
+               created_at, updated_at
         FROM users 
         WHERE user_id = ${userId}
     `;
 
-    return dbClient->queryRow(selectQuery);
+    UserRecord|sql:Error result = dbClient->queryRow(selectQuery);
+    if result is sql:Error {
+        log:printError("❌ Database query failed for userId: " + userId + ", Error: " + result.message());
+    } else {
+        log:printInfo("✅ Database query successful for userId: " + userId);
+    }
+
+    return result;
 }
 
 public isolated function getAllUsers() returns UserRecord[]|sql:Error {
     sql:ParameterizedQuery selectQuery = `
         SELECT user_id, username, first_name, last_name, email, 
-               country, mobile_number, birthdate, bio, created_at, updated_at
+               country, mobile_number, birthdate, bio,
+               city_name, city_latitude, city_longitude,
+               created_at, updated_at
         FROM users 
         ORDER BY first_name ASC, last_name ASC
     `;
@@ -133,7 +148,10 @@ public isolated function updateUser(string userId, UserUpdate updateData) return
             mobile_number = ${updateData.mobileNumber},
             birthdate = ${updateData.birthdate},
             bio = ${updateData.bio},
-            updated_at = ${updateData.updatedAt}
+            updated_at = ${updateData.updatedAt},
+            city_name = ${updateData.cityName},
+            city_latitude = ${updateData.cityLatitude},
+            city_longitude = ${updateData.cityLongitude}
         WHERE user_id = ${userId}
     `;
 
@@ -150,6 +168,9 @@ public type UserRecord record {|
     string? mobile_number;
     string? birthdate;
     string? bio;
+    string? city_name;
+    float? city_latitude;
+    float? city_longitude;
     string created_at;
     string updated_at;
 |};
@@ -163,6 +184,9 @@ public type UserInsert record {|
     string? country;
     string? mobileNumber;
     string? birthdate;
+    string? cityName;
+    float? cityLatitude;
+    float? cityLongitude;
     string createdAt;
     string updatedAt;
 |};
@@ -174,6 +198,9 @@ public type UserUpdate record {|
     string? mobileNumber;
     string? birthdate;
     string? bio;
+    string? cityName;
+    float? cityLatitude;
+    float? cityLongitude;
     string updatedAt;
 |};
 
