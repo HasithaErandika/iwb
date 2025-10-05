@@ -44,6 +44,7 @@ export default function CityDetailPage({ params }) {
                         population: c.population ?? 0,
                         temperature: c.temperature ?? 0,
                         ratingsBreakdown: c.ratingsBreakdown || {},
+                        totalRatings: c.totalRatings ?? 0, // Add this line to map totalRatings
                     }
                     setCity(mapped)
                 } else {
@@ -62,12 +63,12 @@ export default function CityDetailPage({ params }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-white">
+            <div className="min-h-screen bg-background">
                 <div className="max-w-6xl mx-auto px-4 py-8">
                     <div className="flex items-center justify-center min-h-96">
                         <div className="text-center">
                             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-                            <p className="text-gray-600">Loading city details...</p>
+                            <p className="text-muted-foreground">Loading city details...</p>
                         </div>
                     </div>
                 </div>
@@ -79,7 +80,7 @@ export default function CityDetailPage({ params }) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
-                    <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <MapPin className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                     <h1 className="text-2xl font-bold mb-4">City Not Found</h1>
                     <p className="text-muted-foreground mb-4">
                         The city you're looking for doesn't exist yet. Start by adding cities to the database.

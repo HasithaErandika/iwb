@@ -4,7 +4,7 @@ import { SearchBox } from "@mapbox/search-js-react";
 import mapboxgl from "mapbox-gl";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin, X } from "lucide-react";
+import { MapPin, X, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 // Initialize mapboxgl only on client side to avoid SSR issues
@@ -15,6 +15,7 @@ if (typeof window !== 'undefined') {
 
 export default function LocationSelector({ onLocationSet, currentLocation }) {
   const [userLocation, setUserLocation] = useState(currentLocation || null);
+  const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
 
   // Log component mount and session data
@@ -66,6 +67,8 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
     }
 
     try {
+      setIsLoading(true);
+      
       // Decode the JWT token to get the user ID (sub field)
       console.log("🔍 Decoding JWT token...");
       const tokenPayload = JSON.parse(atob(session.access_token.split('.')[1]));
@@ -120,9 +123,15 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
       console.log("  Error type:", error.constructor.name);
       console.log("  Error message:", error.message);
       console.log("  Full error:", error);
+    } finally {
+      setIsLoading(false);
+      console.log("=== LOCATION SAVER END ===");
     }
+  };
 
-    console.log("=== LOCATION SAVER END ===");
+  const clearLocation = () => {
+    setUserLocation(null);
+    // Optionally, you could also clear the location from the backend
   };
 
   return (
@@ -132,6 +141,16 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 dark:hidden" />
         <div className="relative flex items-center justify-between">
           <h3 className="font-semibold text-sm text-foreground">Set Your Location</h3>
+          {userLocation && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearLocation}
+              className="h-6 w-6 p-0 hover:bg-muted"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
         </div>
 
         <div className="relative w-full">
@@ -144,7 +163,6 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
             }}
             placeholder="Search for your city..."
             options={{
-              country: "LK",
               types: "place,locality",
               language: ["en"],
               limit: 8
@@ -170,9 +188,18 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
               saveLocation();
             }}
             className="w-full"
-            disabled={!userLocation}
+            disabled={!userLocation || isLoading}
           >
-            {userLocation ? "Save Location" : "Search a city to save"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : userLocation ? (
+              "Save Location"
+            ) : (
+              "Search a city to save"
+            )}
           </Button>
         </div>
       </Card>
