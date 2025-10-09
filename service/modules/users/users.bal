@@ -10,16 +10,26 @@ public isolated function createOrUpdateUser(UserCreateRequest userRequest) retur
     UserRecord|sql:Error existingUser = utils:getUserById(userRequest.userId);
 
     if existingUser is UserRecord {
+        // Preserve existing values if incoming fields are missing or empty
+        string resolvedFirstName = userRequest.firstName == "" ? existingUser.first_name : userRequest.firstName;
+        string resolvedLastName = userRequest.lastName == "" ? existingUser.last_name : userRequest.lastName;
+        string? resolvedCountry = let string? c = userRequest?.country in (c is string && c != "" ? c : existingUser.country);
+        string? resolvedMobile = let string? m = userRequest?.mobileNumber in (m is string && m != "" ? m : existingUser.mobile_number);
+        string? resolvedBirthdate = let string? b = userRequest?.birthdate in (b is string && b != "" ? b : existingUser.birthdate);
+        string? resolvedCityName = let string? cn = userRequest?.cityName in (cn is string && cn != "" ? cn : existingUser.city_name);
+        float? resolvedCityLat = let float? lat = userRequest?.cityLatitude in (lat is float ? lat : existingUser.city_latitude);
+        float? resolvedCityLng = let float? lng = userRequest?.cityLongitude in (lng is float ? lng : existingUser.city_longitude);
+
         UserUpdate userUpdate = {
-            firstName: userRequest.firstName,
-            lastName: userRequest.lastName,
-            country: userRequest?.country,
-            mobileNumber: userRequest?.mobileNumber,
-            birthdate: userRequest?.birthdate,
-            bio: existingUser?.bio,
-            cityName: userRequest?.cityName,
-            cityLatitude: userRequest?.cityLatitude,
-            cityLongitude: userRequest?.cityLongitude,
+            firstName: resolvedFirstName,
+            lastName: resolvedLastName,
+            country: resolvedCountry,
+            mobileNumber: resolvedMobile,
+            birthdate: resolvedBirthdate,
+            bio: existingUser.bio,
+            cityName: resolvedCityName,
+            cityLatitude: resolvedCityLat,
+            cityLongitude: resolvedCityLng,
             updatedAt: currentTime
         };
 
