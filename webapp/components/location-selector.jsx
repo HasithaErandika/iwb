@@ -20,7 +20,7 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
 
   // Log component mount and session data
   useEffect(() => {
-    console.log("🏗️ LocationSelector component mounted");
+    console.log(" LocationSelector component mounted");
     console.log("  Current location:", currentLocation);
     console.log("  Session exists:", !!session);
     console.log("  Session user:", session?.user);
@@ -30,7 +30,7 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
   }, [session, currentLocation]);
 
   const handleLocationSelect = (result) => {
-    console.log("🗺️ Location selected from mapbox:");
+    console.log(" Location selected from mapbox:");
     console.log("  Raw result:", result);
 
     const { coordinates } = result.features[0].geometry;
@@ -40,13 +40,13 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
       longitude: coordinates[0],
     };
 
-    console.log("📍 Processed location data:");
+    console.log(" Processed location data:");
     console.log("  City Name:", location.cityName);
     console.log("  Latitude:", location.latitude);
     console.log("  Longitude:", location.longitude);
 
     setUserLocation(location);
-    console.log("✅ Location state updated");
+    console.log(" Location state updated");
   };
 
   const saveLocation = async () => {
@@ -55,25 +55,25 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
     console.log("Session access token exists:", !!session?.access_token);
 
     if (!userLocation || !session?.access_token) {
-      console.log("❌ Missing required data - userLocation:", !!userLocation, "access_token:", !!session?.access_token);
+      console.log(" Missing required data - userLocation:", !!userLocation, "access_token:", !!session?.access_token);
       return;
     }
 
     // Check if cityName is missing and provide a fallback
     if (!userLocation.cityName) {
-      console.log("⚠️ City name is missing, using coordinates as fallback");
+      console.log(" City name is missing, using coordinates as fallback");
       userLocation.cityName = `Location (${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)})`;
-      console.log("📍 Updated city name:", userLocation.cityName);
+      console.log(" Updated city name:", userLocation.cityName);
     }
 
     try {
       setIsLoading(true);
       
       // Decode the JWT token to get the user ID (sub field)
-      console.log("🔍 Decoding JWT token...");
+      console.log(" Decoding JWT token...");
       const tokenPayload = JSON.parse(atob(session.access_token.split('.')[1]));
       const userId = tokenPayload.sub;
-      console.log("✅ User ID extracted:", userId);
+      console.log(" User ID extracted:", userId);
 
       const requestData = {
         cityName: userLocation.cityName,
@@ -81,7 +81,7 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
         cityLongitude: userLocation.longitude,
       };
 
-      console.log("📤 Sending request to backend:");
+      console.log(" Sending request to backend:");
       console.log("  URL: http://localhost:8080/api/users/" + userId);
       console.log("  Method: PUT");
       console.log("  Data:", JSON.stringify(requestData, null, 2));
@@ -89,7 +89,7 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + session.access_token.substring(0, 20) + "..."
       });
-      console.log("🔍 Debugging user ID:");
+      console.log(" Debugging user ID:");
       console.log("  JWT sub (user ID):", userId);
       console.log("  JWT full payload:", JSON.stringify(tokenPayload, null, 2));
 
@@ -102,24 +102,24 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
         body: JSON.stringify(requestData),
       });
 
-      console.log("📥 Backend response received:");
+      console.log(" Backend response received:");
       console.log("  Status:", response.status);
       console.log("  Status Text:", response.statusText);
       console.log("  OK:", response.ok);
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log("✅ Location saved successfully!");
+        console.log(" Location saved successfully!");
         console.log("  Response data:", JSON.stringify(responseData, null, 2));
         onLocationSet?.(userLocation);
       } else {
         const errorData = await response.text();
-        console.log("❌ Failed to save location:");
+        console.log(" Failed to save location:");
         console.log("  Status:", response.status);
         console.log("  Error response:", errorData);
       }
     } catch (error) {
-      console.log("💥 Error occurred while saving location:");
+      console.log(" Error occurred while saving location:");
       console.log("  Error type:", error.constructor.name);
       console.log("  Error message:", error.message);
       console.log("  Full error:", error);
@@ -182,7 +182,7 @@ export default function LocationSelector({ onLocationSet, currentLocation }) {
           )}
           <Button
             onClick={() => {
-              console.log("🔘 Save Location button clicked");
+              console.log(" Save Location button clicked");
               console.log("  User location:", userLocation);
               console.log("  Session:", !!session);
               saveLocation();
